@@ -3,12 +3,15 @@
 import { useState } from "react";
 import SendButton from "./SendButton";
 import ModelSelector from "./ModelSelector";
+import type { ModelId } from "../models";
 
 type ChatBoxProps = {
   onSubmit?: (text: string) => void;
   placeholder?: string;
   modelMenuDropUp?: boolean;
   disabled?: boolean;
+  model?: ModelId;
+  onModelChange?: (model: ModelId) => void;
 };
 
 export default function ChatBox({
@@ -16,6 +19,8 @@ export default function ChatBox({
   placeholder = "How can I help you today?",
   modelMenuDropUp = false,
   disabled = false,
+  model,
+  onModelChange,
 }: ChatBoxProps) {
   const [value, setValue] = useState("");
 
@@ -49,7 +54,11 @@ export default function ChatBox({
       {/* Bottom toolbar */}
       <div className="mt-6 flex items-center justify-end">
         <div className="flex items-center gap-4">
-          <ModelSelector dropUp={modelMenuDropUp} />
+          <ModelSelector
+            dropUp={modelMenuDropUp}
+            value={model}
+            onChange={onModelChange}
+          />
           <SendButton onClick={submit} />
         </div>
       </div>

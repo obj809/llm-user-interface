@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import ChatBox from "./ChatBox";
 import ChatMessage, { type Message } from "./ChatMessage";
 import Spark from "./Spark";
+import { DEFAULT_MODEL_ID, type ModelId } from "../models";
 
 type Turn = { user: Message; assistant: Message | null };
 
@@ -27,6 +28,7 @@ export default function ChatApp() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [thinking, setThinking] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [model, setModel] = useState<ModelId>(DEFAULT_MODEL_ID);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastTurnRef = useRef<HTMLDivElement>(null);
   const idCounter = useRef(0);
@@ -109,6 +111,7 @@ export default function ChatApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: history.map(({ role, content }) => ({ role, content })),
+          model,
         }),
       });
       if (!res.ok || !res.body) throw new Error(`Request failed: ${res.status}`);
@@ -145,7 +148,11 @@ export default function ChatApp() {
         <h1 className="mb-8 text-center font-serif text-5xl tracking-tight text-[#5b6650] dark:text-[#c8ccbf]">
           LLM User Interface
         </h1>
-        <ChatBox onSubmit={handleSubmit} />
+        <ChatBox
+          onSubmit={handleSubmit}
+          model={model}
+          onModelChange={setModel}
+        />
       </div>
     );
   }
@@ -183,6 +190,8 @@ export default function ChatApp() {
           placeholder="Write a message…"
           modelMenuDropUp
           disabled={isStreaming}
+          model={model}
+          onModelChange={setModel}
         />
         <p className="mt-2 text-center text-xs text-zinc-500">
           LLM User Interface is connected to AI which can make mistakes. Please

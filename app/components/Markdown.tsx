@@ -1,5 +1,6 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import CodeBlock from "./CodeBlock";
 
 // Tailwind-styled renderers for the model's markdown output.
 const components: Components = {
@@ -34,16 +35,21 @@ const components: Components = {
       {children}
     </a>
   ),
-  code: ({ children }) => (
-    <code className="rounded bg-zinc-200/70 px-1.5 py-0.5 text-[0.9em] dark:bg-zinc-700/70">
-      {children}
-    </code>
-  ),
-  pre: ({ children }) => (
-    <pre className="mb-3 overflow-x-auto rounded-lg bg-zinc-100 p-3 text-sm last:mb-0 dark:bg-zinc-800 [&>code]:bg-transparent [&>code]:p-0 [&>code]:text-inherit">
-      {children}
-    </pre>
-  ),
+  // Fenced/multiline code renders as a CodeBlock card; inline code stays a
+  // simple styled span. `pre` just passes through — CodeBlock is its own card.
+  code: ({ className, children }) => {
+    const match = /language-(\w+)/.exec(className ?? "");
+    const text = String(children ?? "");
+    if (match || text.includes("\n")) {
+      return <CodeBlock code={text} language={match?.[1]} />;
+    }
+    return (
+      <code className="rounded bg-zinc-200/70 px-1.5 py-0.5 text-[0.9em] dark:bg-zinc-700/70">
+        {children}
+      </code>
+    );
+  },
+  pre: ({ children }) => <>{children}</>,
   blockquote: ({ children }) => (
     <blockquote className="mb-3 border-l-2 border-zinc-300 pl-4 italic text-zinc-600 last:mb-0 dark:border-zinc-600 dark:text-zinc-400">
       {children}

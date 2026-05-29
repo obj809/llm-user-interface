@@ -2,33 +2,13 @@
 
 import { useState } from "react";
 import Markdown from "./Markdown";
+import { copyToClipboard } from "../clipboard";
 
 export type Message = {
   id: number;
   role: "user" | "assistant";
   content: string;
 };
-
-async function copyToClipboard(text: string) {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return;
-    }
-  } catch {
-    // Fall through to the legacy fallback below.
-  }
-
-  // Fallback for non-secure contexts where the Clipboard API is unavailable.
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-  document.execCommand("copy");
-  document.body.removeChild(textarea);
-}
 
 export default function ChatMessage({ message }: { message: Message }) {
   const [copied, setCopied] = useState(false);

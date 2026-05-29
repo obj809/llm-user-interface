@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-const MODELS = ["Gemini 2.5 Flash-Lite"] as const;
-type Model = (typeof MODELS)[number];
+import { DEFAULT_MODEL_ID, MODELS, type ModelId } from "../models";
 
 type ModelSelectorProps = {
-  value?: Model;
-  onChange?: (model: Model) => void;
+  value?: ModelId;
+  onChange?: (model: ModelId) => void;
   dropUp?: boolean;
 };
 
@@ -17,11 +15,13 @@ export default function ModelSelector({
   dropUp = false,
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
-  const [internal, setInternal] = useState<Model>("Gemini 2.5 Flash-Lite");
+  const [internal, setInternal] = useState<ModelId>(DEFAULT_MODEL_ID);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Support both controlled and uncontrolled usage.
   const selected = value ?? internal;
+  const selectedLabel =
+    MODELS.find((m) => m.id === selected)?.label ?? selected;
 
   useEffect(() => {
     if (!open) return;
@@ -43,7 +43,7 @@ export default function ModelSelector({
     };
   }, [open]);
 
-  const select = (model: Model) => {
+  const select = (model: ModelId) => {
     setInternal(model);
     onChange?.(model);
     setOpen(false);
@@ -58,7 +58,7 @@ export default function ModelSelector({
         aria-expanded={open}
         className="flex cursor-pointer items-center gap-1.5 text-sm transition-colors hover:text-black dark:hover:text-zinc-100"
       >
-        <span className="text-zinc-800 dark:text-zinc-200">{selected}</span>
+        <span className="text-zinc-800 dark:text-zinc-200">{selectedLabel}</span>
         <ChevronDownIcon open={open} />
       </button>
 
@@ -70,16 +70,16 @@ export default function ModelSelector({
           }`}
         >
           {MODELS.map((model) => (
-            <li key={model}>
+            <li key={model.id}>
               <button
                 type="button"
                 role="option"
-                aria-selected={model === selected}
-                onClick={() => select(model)}
+                aria-selected={model.id === selected}
+                onClick={() => select(model.id)}
                 className="flex w-full cursor-pointer items-center justify-between gap-3 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-700/50"
               >
-                {model}
-                {model === selected && <CheckIcon />}
+                {model.label}
+                {model.id === selected && <CheckIcon />}
               </button>
             </li>
           ))}
