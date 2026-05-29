@@ -8,16 +8,19 @@ type ChatBoxProps = {
   onSubmit?: (text: string) => void;
   placeholder?: string;
   modelMenuDropUp?: boolean;
+  disabled?: boolean;
 };
 
 export default function ChatBox({
   onSubmit,
   placeholder = "How can I help you today?",
   modelMenuDropUp = false,
+  disabled = false,
 }: ChatBoxProps) {
   const [value, setValue] = useState("");
 
   const submit = () => {
+    if (disabled) return;
     const text = value.trim();
     if (!text) return;
     onSubmit?.(text);

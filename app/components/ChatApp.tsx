@@ -7,10 +7,8 @@ import Spark from "./Spark";
 
 type Turn = { user: Message; assistant: Message | null };
 
-// Stubbed assistant reply. Swap this for a real API call later.
-function generateReply(): string {
-  return "Hi! What can I help you with today?";
-}
+const ERROR_MESSAGE =
+  "Sorry — something went wrong reaching the model. Please try again.";
 
 // Group the flat message list into user/assistant turns.
 function toTurns(messages: Message[]): Turn[] {
@@ -28,10 +26,14 @@ function toTurns(messages: Message[]): Turn[] {
 export default function ChatApp() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [thinking, setThinking] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastTurnRef = useRef<HTMLDivElement>(null);
+  const idCounter = useRef(0);
   const [viewportHeight, setViewportHeight] = useState(0);
   const hasMessages = messages.length > 0;
+
+  const nextId = () => ++idCounter.current;
 
   // Track the scroll viewport height so the newest turn can fill it,
   // letting it sit at the top while earlier turns scroll off-screen.
@@ -52,20 +54,59 @@ export default function ChatApp() {
     lastTurnRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [userCount]);
 
-  const handleSubmit = (text: string) => {
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now(), role: "user", content: text },
+  const handleSubmit = async (text: string) => {
+    if (isStreaming) return;
+
+    const userMessage: Message = { id: nextId(), role: "user", content: text };
+    const assistantId = nextId();
+    const history = [...messages, userMessage];
+
+    setMessages([
+      ...history,
+      { id: assistantId, role: "assistant", content: "" },
     ]);
     setThinking(true);
+    setIsStreaming(true);
 
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now(), role: "assistant", content: generateReply() },
-      ]);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: history.map(({ role, content }) => ({ role, content })),
+        }),
+      });
+      if (!res.ok || !res.body) throw new Error(`Request failed: ${res.status}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let firstChunk = true;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        if (!chunk) continue;
+        if (firstChunk) {
+          setThinking(false);
+          firstChunk = false;
+        }
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId ? { ...m, content: m.content + chunk } : m,
+          ),
+        );
+      }
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, content: ERROR_MESSAGE } : m,
+        ),
+      );
+    } finally {
       setThinking(false);
-    }, 800);
+      setIsStreaming(false);
+    }
   };
 
   // Welcome view — shown before the first message is sent.
@@ -97,7 +138,9 @@ export default function ChatApp() {
                 className="scroll-mt-8 space-y-6 pb-10"
               >
                 <ChatMessage message={turn.user} />
-                {turn.assistant && <ChatMessage message={turn.assistant} />}
+                {turn.assistant && turn.assistant.content.length > 0 && (
+                  <ChatMessage message={turn.assistant} />
+                )}
                 {isLast && thinking && <Spark className="animate-pulse" />}
               </div>
             );
@@ -110,6 +153,7 @@ export default function ChatApp() {
           onSubmit={handleSubmit}
           placeholder="Write a message…"
           modelMenuDropUp
+          disabled={isStreaming}
         />
         <p className="mt-2 text-center text-xs text-zinc-500">
           LLM User Interface is connected to AI which can make mistakes. Please
