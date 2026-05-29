@@ -5,62 +5,56 @@ import { Highlight, type PrismTheme } from "prism-react-renderer";
 import { copyToClipboard } from "../clipboard";
 import { ensureLanguage, isLoaded, resolveLanguage } from "./prism-languages";
 
-// Official Dracula palette (https://spec.draculatheme.com). Token mapping per
-// the spec: keywords/operators → pink, strings → yellow, comments → comment,
-// numbers/constants/booleans → purple, functions → green, class names → cyan,
-// parameters → orange, built-ins → cyan, variables/punctuation → foreground.
-const DRACULA = {
-  background: "#282a36",
-  currentLine: "#44475a",
-  foreground: "#f8f8f2",
-  comment: "#6272a4",
-  cyan: "#8be9fd",
-  green: "#50fa7b",
-  orange: "#ffb86c",
-  pink: "#ff79c6",
-  purple: "#bd93f9",
-  red: "#ff5555",
-  yellow: "#f1fa8c",
-} as const;
+// Theme-aware syntax colors. Token colors reference CSS variables defined in
+// globals.css under `:root` (GitHub Light) and `.dark` (Dracula), so the
+// existing class-based dark-mode switch recolors highlighting with no JS.
+// `entity`/`tag` and `variable` get their own variables because the two themes
+// group them differently (e.g. tags are keyword-pink in Dracula, green in
+// GitHub Light; variables are foreground in Dracula, orange in GitHub Light).
+//
+// `fontStyle` is typed as "normal" | "italic", but a CSS variable is valid at
+// runtime (it resolves to one of those), so we cast where we drive it by var.
+const italicVar = "var(--cb-comment-style)" as "italic";
+const classItalicVar = "var(--cb-class-style)" as "italic";
+const paramItalicVar = "var(--cb-parameter-style)" as "italic";
 
 const theme: PrismTheme = {
-  plain: { color: DRACULA.foreground, backgroundColor: "transparent" },
+  plain: { color: "var(--cb-fg)", backgroundColor: "transparent" },
   styles: [
     {
       types: ["comment", "prolog", "doctype", "cdata"],
-      style: { color: DRACULA.comment, fontStyle: "italic" },
+      style: { color: "var(--cb-comment)", fontStyle: italicVar },
     },
     {
-      types: ["keyword", "operator", "control", "atrule", "tag", "entity"],
-      style: { color: DRACULA.pink },
+      types: ["keyword", "operator", "control", "atrule"],
+      style: { color: "var(--cb-keyword)" },
     },
     {
       types: ["string", "char", "attr-value", "inserted", "url"],
-      style: { color: DRACULA.yellow },
+      style: { color: "var(--cb-string)" },
     },
     {
       types: ["number", "boolean", "constant", "symbol"],
-      style: { color: DRACULA.purple },
+      style: { color: "var(--cb-number)" },
     },
     {
       types: ["function", "function-variable", "method"],
-      style: { color: DRACULA.green },
+      style: { color: "var(--cb-function)" },
     },
     {
       types: ["class-name", "builtin"],
-      style: { color: DRACULA.cyan, fontStyle: "italic" },
+      style: { color: "var(--cb-class)", fontStyle: classItalicVar },
     },
     {
       types: ["parameter"],
-      style: { color: DRACULA.orange, fontStyle: "italic" },
+      style: { color: "var(--cb-parameter)", fontStyle: paramItalicVar },
     },
-    { types: ["regex", "important"], style: { color: DRACULA.orange } },
-    { types: ["attr-name", "selector"], style: { color: DRACULA.green } },
-    {
-      types: ["punctuation", "variable", "property"],
-      style: { color: DRACULA.foreground },
-    },
-    { types: ["deleted"], style: { color: DRACULA.red } },
+    { types: ["regex", "important"], style: { color: "var(--cb-regex)" } },
+    { types: ["attr-name", "selector"], style: { color: "var(--cb-attr)" } },
+    { types: ["tag", "entity"], style: { color: "var(--cb-tag)" } },
+    { types: ["variable", "property"], style: { color: "var(--cb-variable)" } },
+    { types: ["punctuation"], style: { color: "var(--cb-fg)" } },
+    { types: ["deleted"], style: { color: "var(--cb-deleted)" } },
   ],
 };
 
@@ -142,12 +136,18 @@ export default function CodeBlock({
 
   return (
     <div
-      className="mb-3 overflow-hidden rounded-xl border border-[#44475a] last:mb-0"
-      style={{ backgroundColor: DRACULA.background }}
+      className="mb-3 overflow-hidden rounded-xl border last:mb-0"
+      style={{ backgroundColor: "var(--cb-bg)", borderColor: "var(--cb-border)" }}
     >
       {/* Header: language label + actions */}
-      <div className="flex items-center justify-between gap-2 border-b border-[#44475a] px-4 py-2.5">
-        <div className="flex items-center gap-2 text-sm font-medium text-[#f8f8f2]">
+      <div
+        className="flex items-center justify-between gap-2 border-b px-4 py-2.5"
+        style={{ borderColor: "var(--cb-border)" }}
+      >
+        <div
+          className="flex items-center gap-2 text-sm font-medium"
+          style={{ color: "var(--cb-fg)" }}
+        >
           <CodeIcon />
           <span>{labelFor(language)}</span>
         </div>
@@ -156,7 +156,7 @@ export default function CodeBlock({
             type="button"
             aria-label={copied ? "Copied" : "Copy code"}
             onClick={handleCopy}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-[#6272a4] transition-colors hover:bg-[#44475a] hover:text-[#f8f8f2]"
+            className="cb-action flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors"
           >
             {copied ? <CheckIcon /> : <CopyIcon />}
           </button>
@@ -200,7 +200,7 @@ function CodeIcon() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="text-[#6272a4]"
+      style={{ color: "var(--cb-icon)" }}
     >
       <path d="m16 18 6-6-6-6" />
       <path d="m8 6-6 6 6 6" />
@@ -230,7 +230,7 @@ function CopyIcon() {
 
 function CheckIcon() {
   return (
-    <svg {...iconProps} className="text-[#50fa7b]">
+    <svg {...iconProps} style={{ color: "var(--cb-check)" }}>
       <path d="M20 6 9 17l-5-5" />
     </svg>
   );

@@ -6,11 +6,66 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Code blocks — GitHub Light syntax theme (light mode). */
+  --cb-bg: #f6f8fa;
+  --cb-border: #d0d7de;
+  --cb-icon: #6e7781;
+  --cb-hover: #eaeef2;
+  --cb-fg: #1f2328;
+  --cb-comment: #6e7781;
+  --cb-comment-style: normal;
+  --cb-keyword: #cf222e;
+  --cb-string: #0a3069;
+  --cb-number: #0550ae;
+  --cb-function: #8250df;
+  --cb-class: #953800;
+  --cb-class-style: normal;
+  --cb-parameter: #1f2328;
+  --cb-parameter-style: normal;
+  --cb-regex: #0550ae;
+  --cb-attr: #0550ae;
+  --cb-tag: #116329;
+  --cb-variable: #953800;
+  --cb-deleted: #82071e;
+  --cb-check: #1a7f37;
 }
 
 .dark {
   --background: #0a0a0a;
   --foreground: #ededed;
+
+  /* Code blocks — Dracula syntax theme (dark mode). */
+  --cb-bg: #282a36;
+  --cb-border: #44475a;
+  --cb-icon: #6272a4;
+  --cb-hover: #44475a;
+  --cb-fg: #f8f8f2;
+  --cb-comment: #6272a4;
+  --cb-comment-style: italic;
+  --cb-keyword: #ff79c6;
+  --cb-string: #f1fa8c;
+  --cb-number: #bd93f9;
+  --cb-function: #50fa7b;
+  --cb-class: #8be9fd;
+  --cb-class-style: italic;
+  --cb-parameter: #ffb86c;
+  --cb-parameter-style: italic;
+  --cb-regex: #ffb86c;
+  --cb-attr: #50fa7b;
+  --cb-tag: #ff79c6;
+  --cb-variable: #f8f8f2;
+  --cb-deleted: #ff5555;
+  --cb-check: #50fa7b;
+}
+
+/* Copy button in a code-block header (needs :hover, so not inline-styleable). */
+.cb-action {
+  color: var(--cb-icon);
+}
+.cb-action:hover {
+  background-color: var(--cb-hover);
+  color: var(--cb-fg);
 }
 
 @theme inline {
