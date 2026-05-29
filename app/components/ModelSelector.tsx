@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const MODELS = ["Opus 4.8", "Sonnet 4.6", "Haiku 4.5"] as const;
+const MODELS = ["Gemini 2.5 Flash-Lite"] as const;
 type Model = (typeof MODELS)[number];
 
 type ModelSelectorProps = {
@@ -17,7 +17,7 @@ export default function ModelSelector({
   dropUp = false,
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
-  const [internal, setInternal] = useState<Model>("Opus 4.8");
+  const [internal, setInternal] = useState<Model>("Gemini 2.5 Flash-Lite");
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Support both controlled and uncontrolled usage.
@@ -59,7 +59,6 @@ export default function ModelSelector({
         className="flex cursor-pointer items-center gap-1.5 text-sm transition-colors hover:text-black dark:hover:text-zinc-100"
       >
         <span className="text-zinc-800 dark:text-zinc-200">{selected}</span>
-        <span className="text-zinc-500">High</span>
         <ChevronDownIcon open={open} />
       </button>
 
@@ -77,7 +76,7 @@ export default function ModelSelector({
                 role="option"
                 aria-selected={model === selected}
                 onClick={() => select(model)}
-                className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-700/50"
+                className="flex w-full cursor-pointer items-center justify-between gap-3 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-700/50"
               >
                 {model}
                 {model === selected && <CheckIcon />}

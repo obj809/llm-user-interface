@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-2.5-flash-lite";
 
 type ChatMessage = {
   role: "user" | "assistant";

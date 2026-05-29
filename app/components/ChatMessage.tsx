@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Markdown from "./Markdown";
 
 export type Message = {
   id: number;
@@ -50,9 +51,7 @@ export default function ChatMessage({ message }: { message: Message }) {
 
   return (
     <div className="space-y-3">
-      <div className="whitespace-pre-wrap font-serif text-xl leading-relaxed text-zinc-900 dark:text-zinc-100">
-        {message.content}
-      </div>
+      <Markdown content={message.content} />
       <div className="flex items-center gap-1 text-zinc-400 dark:text-zinc-500">
         <ActionButton label={copied ? "Copied" : "Copy"} onClick={handleCopy}>
           {copied ? <CheckIcon /> : <CopyIcon />}
