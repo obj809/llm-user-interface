@@ -44,7 +44,7 @@ const components: Components = {
       return <CodeBlock code={text} language={match?.[1]} />;
     }
     return (
-      <code className="rounded bg-zinc-200/70 px-1.5 py-0.5 text-[0.9em] dark:bg-zinc-700/70">
+      <code className="rounded bg-zinc-200/70 px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-zinc-700/70">
         {children}
       </code>
     );

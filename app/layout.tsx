@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ThemeToggle from "./components/ThemeToggle";
 
 // Runs before paint to apply the saved (or system) theme and avoid a flash.
 const themeInitScript = `
@@ -13,16 +11,6 @@ const themeInitScript = `
   } catch (e) {}
 })();
 `;
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "LLM User Interface",
@@ -38,17 +26,12 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="h-full flex flex-col">
-        <div className="fixed right-4 top-4 z-10">
-          <ThemeToggle />
-        </div>
-        {children}
-      </body>
+      <body className="h-full flex flex-col">{children}</body>
     </html>
   );
 }

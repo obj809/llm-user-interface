@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import ChatBox from "./ChatBox";
 import ChatMessage, { type Message } from "./ChatMessage";
+import HomeButton from "./HomeButton";
 import Spark from "./Spark";
+import ThemeToggle from "./ThemeToggle";
 import { DEFAULT_MODEL_ID, type ModelId } from "../models";
 
 type Turn = { user: Message; assistant: Message | null };
@@ -141,19 +143,39 @@ export default function ChatApp() {
     }
   };
 
+  // Reset to the welcome screen, clearing the conversation. Any in-flight
+  // stream keeps targeting its (now-absent) message id, so it harmlessly
+  // no-ops against the empty list.
+  const handleHome = () => {
+    setMessages([]);
+    setThinking(false);
+    setIsStreaming(false);
+  };
+
+  // Fixed top-right toolbar: theme toggle, with the home button to its right.
+  const toolbar = (
+    <div className="fixed right-6 top-4 z-10 flex items-center gap-1">
+      <ThemeToggle />
+      <HomeButton onClick={handleHome} />
+    </div>
+  );
+
   // Welcome view — shown before the first message is sent.
   if (messages.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center px-4">
-        <h1 className="mb-8 text-center font-serif text-5xl tracking-tight text-[#5b6650] dark:text-[#c8ccbf]">
-          LLM User Interface
-        </h1>
-        <ChatBox
-          onSubmit={handleSubmit}
-          model={model}
-          onModelChange={setModel}
-        />
-      </div>
+      <>
+        {toolbar}
+        <div className="flex flex-1 flex-col items-center justify-center px-4">
+          <h1 className="mb-8 text-center font-serif text-5xl tracking-tight text-[#5b6650] dark:text-[#c8ccbf]">
+            LLM User Interface
+          </h1>
+          <ChatBox
+            onSubmit={handleSubmit}
+            model={model}
+            onModelChange={setModel}
+          />
+        </div>
+      </>
     );
   }
 
@@ -162,15 +184,21 @@ export default function ChatApp() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {toolbar}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[52rem] px-4 py-8">
           {turns.map((turn, i) => {
             const isLast = i === turns.length - 1;
+            // The newest turn reserves a viewport so it can scroll to the top
+            // while earlier turns slide off-screen. The very first turn has
+            // nothing above it, so reserving space there would only create an
+            // empty overflow (and a needless scrollbar) for short replies.
+            const reserveViewport = isLast && i > 0;
             return (
               <div
                 key={turn.user.id}
                 ref={isLast ? lastTurnRef : undefined}
-                style={isLast ? { minHeight: viewportHeight || undefined } : undefined}
+                style={reserveViewport ? { minHeight: viewportHeight || undefined } : undefined}
                 className="scroll-mt-8 space-y-6 pb-10"
               >
                 <ChatMessage message={turn.user} />
