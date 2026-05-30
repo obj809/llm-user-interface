@@ -8,39 +8,35 @@ Pick a model in the switcher and it drives which provider the API route calls.
 Replies stream back, reveal with a typewriter effect, and render as Markdown
 with syntax-highlighted code blocks.
 
-- **Google Gemini 2.5 Flash-Lite** (`@google/genai`)
-- **OpenAI GPT-4.1 nano** (`openai`)
-
 ## Features
 
-- 🔀 Model switcher — swap between Gemini and GPT per message
-- ⚡ Streaming responses with a typewriter reveal
-- 📝 Markdown rendering with theme-aware syntax highlighting
-- 🌗 Light / dark mode · 📋 copy buttons · 🏠 reset to home
+- Model switcher — switch between providers per message
+- Streaming responses with a typewriter reveal
+- Markdown rendering with theme-aware syntax highlighting
+- Light / dark mode, copy buttons, and reset to home
 
 ## Tech stack
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 ·
-`@google/genai` · `openai` · `react-markdown` · `prism-react-renderer`
+`react-markdown` · `prism-react-renderer`
 
 ## Getting started
 
-Requires Node.js 20+ and an API key for at least one provider
-([Gemini](https://aistudio.google.com/apikey) /
-[OpenAI](https://platform.openai.com/api-keys)).
+Requires Node.js 20+ and an API key for at least one supported provider.
 
 ```bash
 npm install
 ```
 
-Add the key(s) for the provider(s) you want to `.env.local`:
+Add the key(s) for the provider(s) you want to use to `.env.local`:
 
 ```bash
-GEMINI_API_KEY=your-gemini-key
-OPENAI_API_KEY=your-openai-key
+GEMINI_API_KEY=your-key
+OPENAI_API_KEY=your-key
 ```
 
-Then start the dev server and open [http://localhost:3000](http://localhost:3000):
+You only need the key for whichever model you select. Then start the dev server
+and open [http://localhost:3000](http://localhost:3000):
 
 ```bash
 npm run dev
