@@ -7,24 +7,10 @@ import HomeButton from "./HomeButton";
 import Spark from "./Spark";
 import ThemeToggle from "./ThemeToggle";
 import { DEFAULT_MODEL_ID, type ModelId } from "../models";
-
-type Turn = { user: Message; assistant: Message | null };
+import { toTurns } from "../lib/messages";
 
 const ERROR_MESSAGE =
   "Sorry — something went wrong reaching the model. Please try again.";
-
-// Group the flat message list into user/assistant turns.
-function toTurns(messages: Message[]): Turn[] {
-  const turns: Turn[] = [];
-  for (const message of messages) {
-    if (message.role === "user") {
-      turns.push({ user: message, assistant: null });
-    } else if (turns.length > 0) {
-      turns[turns.length - 1].assistant = message;
-    }
-  }
-  return turns;
-}
 
 export default function ChatApp() {
   const [messages, setMessages] = useState<Message[]>([]);

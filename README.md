@@ -44,6 +44,20 @@ npm run dev
 
 Other scripts: `npm run build`, `npm run start`, `npm run lint`.
 
+## Testing
+
+Unit and component tests run on [Vitest](https://vitest.dev/) with
+[React Testing Library](https://testing-library.com/) (jsdom). Tests live under
+`tests/`, mirroring the source layout, and cover the model registry, the
+message-grouping and grammar-loading helpers, the streaming API route (provider
+SDKs mocked), and the UI components (input, model selector, theme toggle,
+messages, Markdown/code rendering, clipboard).
+
+```bash
+npm test          # run once
+npm run test:watch
+```
+
 ## Structure
 
 ```
@@ -54,6 +68,8 @@ app/
 ├── models.ts             Shared model registry (single source of truth)
 ├── api/chat/route.ts     Streaming POST handler; dispatches by provider
 └── components/           ChatApp, ChatBox, ChatMessage, Markdown, …
+
+tests/                    Vitest suites, mirroring the app/ layout
 ```
 
 Models are defined once in `app/models.ts` and shared by the client selector and
