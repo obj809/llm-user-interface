@@ -22,7 +22,7 @@ export default function ChatMessage({ message }: { message: Message }) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] whitespace-pre-wrap rounded-2xl bg-zinc-100 px-4 py-2.5 text-zinc-900 dark:bg-[#1f1f1f] dark:text-zinc-100">
+        <div className="max-w-[80%] whitespace-pre-wrap rounded-2xl bg-zinc-100 px-4 py-2.5 text-lg text-zinc-900 dark:bg-[#1f1f1f] dark:text-zinc-100">
           {message.content}
         </div>
       </div>

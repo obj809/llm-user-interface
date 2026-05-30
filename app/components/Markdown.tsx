@@ -15,7 +15,7 @@ const components: Components = {
   ol: ({ children }) => (
     <ol className="mb-3 list-decimal space-y-1 pl-6 last:mb-0">{children}</ol>
   ),
-  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  li: ({ children }) => <li>{children}</li>,
   h1: ({ children }) => (
     <h1 className="mb-3 mt-2 text-2xl font-semibold first:mt-0">{children}</h1>
   ),
@@ -75,7 +75,7 @@ const components: Components = {
 
 export default function Markdown({ content }: { content: string }) {
   return (
-    <div className="font-serif text-base leading-relaxed text-zinc-900 dark:text-zinc-100">
+    <div className="text-lg text-zinc-900 dark:text-zinc-100">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>
