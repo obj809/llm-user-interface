@@ -54,7 +54,7 @@ SDKs mocked), and the UI components (input, model selector, theme toggle,
 messages, Markdown/code rendering, clipboard).
 
 ```bash
-npm test          # run once
+npm test
 npm run test:watch
 ```
 
