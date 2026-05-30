@@ -8,13 +8,7 @@
 
 ## Overview
 
-A clean chat UI for talking to large language models, built with Next.js (App
-Router) and React. It opens on a centered welcome screen that transitions into a
-conversation view once you send your first message.
-
-Pick a model in the switcher and it drives which provider the API route calls.
-Replies stream back, reveal with a typewriter effect, and render as Markdown
-with syntax-highlighted code blocks.
+A clean Next.js and React chat UI for talking to large language models, featuring a centered welcome screen, model switching, provider-based API routing, streaming replies, a typewriter effect, and Markdown rendering with syntax-highlighted code blocks.
 
 ## Features
 
