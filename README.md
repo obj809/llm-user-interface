@@ -1,5 +1,13 @@
 # LLM User Interface
 
+[![CI](https://github.com/obj809/llm-user-interface/actions/workflows/ci.yml/badge.svg)](https://github.com/obj809/llm-user-interface/actions/workflows/ci.yml)
+
+## Live Deployment
+
+- [Live Deployment](https://llm-user-interface.vercel.app/)
+
+## Overview
+
 A clean chat UI for talking to large language models, built with Next.js (App
 Router) and React. It opens on a centered welcome screen that transitions into a
 conversation view once you send your first message.
