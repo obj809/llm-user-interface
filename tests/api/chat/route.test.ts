@@ -126,22 +126,14 @@ describe("Gemini provider (default model)", () => {
   });
 });
 
-describe("OpenAI provider", () => {
-  it("streams delta content for an openai model", async () => {
-    openaiCreate.mockResolvedValue(
-      asyncChunks([
-        { choices: [{ delta: { content: "Hi" } }] },
-        { choices: [{ delta: { content: " there" } }] },
-      ]),
-    );
+describe("OpenAI provider (temporarily disabled)", () => {
+  it("rejects the disabled openai model with 400 and never calls the SDK", async () => {
     const res = await postJson({
       messages: [{ role: "user", content: "hi" }],
       model: "gpt-4.1-nano",
     });
-    expect(res.status).toBe(200);
-    expect(await res.text()).toBe("Hi there");
-    expect(openaiCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ model: "gpt-4.1-nano", stream: true }),
-    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/unavailable/i);
+    expect(openaiCreate).not.toHaveBeenCalled();
   });
 });
