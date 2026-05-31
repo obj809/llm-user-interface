@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DEFAULT_MODEL_ID, MODELS, type ModelId } from "../models";
+import {
+  AVAILABLE_MODELS,
+  DEFAULT_MODEL_ID,
+  MODELS,
+  type ModelId,
+} from "../models";
 
 type ModelSelectorProps = {
   value?: ModelId;
@@ -69,7 +74,7 @@ export default function ModelSelector({
             dropUp ? "bottom-full mb-2" : "top-full mt-2"
           }`}
         >
-          {MODELS.map((model) => (
+          {AVAILABLE_MODELS.map((model) => (
             <li key={model.id}>
               <button
                 type="button"

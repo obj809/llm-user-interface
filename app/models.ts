@@ -7,6 +7,9 @@ export type ModelInfo = {
   id: ModelId;
   label: string;
   provider: "google" | "openai";
+  // Temporarily hide a model from the picker and reject it at the API.
+  // Flip back to `false`/remove to re-enable.
+  disabled?: boolean;
 };
 
 export const MODELS: readonly ModelInfo[] = [
@@ -19,8 +22,14 @@ export const MODELS: readonly ModelInfo[] = [
     id: "gpt-4.1-nano",
     label: "GPT-4.1 nano",
     provider: "openai",
+    disabled: true,
   },
 ];
+
+// Models the client should offer for selection (excludes disabled ones).
+export const AVAILABLE_MODELS: readonly ModelInfo[] = MODELS.filter(
+  (m) => !m.disabled,
+);
 
 export const DEFAULT_MODEL_ID: ModelId = "gemini-2.5-flash-lite";
 

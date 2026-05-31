@@ -38,6 +38,12 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  if (model.disabled) {
+    return Response.json(
+      { error: `Model is currently unavailable: ${model.id}` },
+      { status: 400 },
+    );
+  }
 
   const apiKey =
     model.provider === "openai"
