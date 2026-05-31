@@ -4,11 +4,13 @@
 
 ## Live Deployment
 
-- [Live Deployment](https://llm-user-interface.vercel.app/)
+[https://llm-user-interface.vercel.app/](https://llm-user-interface.vercel.app/)
+
+<img src="screenshots/project-screen-recording.gif" alt="App Demo" width="960"/>
 
 ## Overview
 
-A clean Next.js and React chat UI for talking to large language models, featuring a centered welcome screen, model switching, provider-based API routing, streaming replies, a typewriter effect, and Markdown rendering with syntax-highlighted code blocks.
+A Next.js and React chat UI for talking to large language models, featuring a centered welcome screen, model switching, provider-based API routing, streaming replies, a typewriter effect, and Markdown rendering with syntax-highlighted code blocks.
 
 ## Features
 
