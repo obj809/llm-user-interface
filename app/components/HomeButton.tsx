@@ -11,7 +11,7 @@ export default function HomeButton({ onClick }: HomeButtonProps) {
       type="button"
       onClick={onClick}
       aria-label="Return home and start a new conversation"
-      className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800"
+      className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800"
     >
       <HomeIcon />
     </button>
