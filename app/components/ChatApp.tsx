@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import ChatBox from "./ChatBox";
 import ChatMessage, { type Message } from "./ChatMessage";
 import HomeButton from "./HomeButton";
-import Spark from "./Spark";
 import ThemeToggle from "./ThemeToggle";
+import ThinkingDot from "./ThinkingDot";
 import { DEFAULT_MODEL_ID, type ModelId } from "../models";
 import { toTurns } from "../lib/messages";
 
@@ -266,7 +266,7 @@ export default function ChatApp() {
                 {turn.assistant && turn.assistant.content.length > 0 && (
                   <ChatMessage message={turn.assistant} />
                 )}
-                {isLast && thinking && <Spark className="animate-pulse" />}
+                {isLast && thinking && <ThinkingDot />}
               </div>
             );
           })}
