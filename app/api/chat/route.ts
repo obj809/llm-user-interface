@@ -45,6 +45,19 @@ export async function POST(request: Request) {
     );
   }
 
+  // The RAG provider proxies an external server and returns its own
+  // Response, so it branches off before the provider API-key check.
+  if (model.provider === "rag") {
+    const base = process.env.RAG_SERVER_URL;
+    if (!base) {
+      return Response.json(
+        { error: "RAG_SERVER_URL is not set on the server." },
+        { status: 500 },
+      );
+    }
+    return streamRag(base, messages);
+  }
+
   const apiKey =
     model.provider === "openai"
       ? process.env.OPENAI_API_KEY
@@ -75,6 +88,36 @@ export async function POST(request: Request) {
   });
 
   return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+// Proxy to the external RAG backend (see RAG_INTEGRATION.md). Unlike the SDK
+// providers below, this is a pass-through: the upstream body streams to the
+// client verbatim, and an upstream failure before any bytes flow becomes a
+// real non-200 (the controller-callback style can only error an already
+// started 200 stream).
+async function streamRag(
+  base: string,
+  messages: ChatMessage[],
+): Promise<Response> {
+  const upstream = await fetch(`${base}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    // Full history, verbatim — the backend uses the last user message as the
+    // query today but accepts the whole conversation.
+    body: JSON.stringify({ messages }),
+  });
+  if (!upstream.ok || !upstream.body) {
+    return Response.json(
+      { error: `RAG server responded ${upstream.status}` },
+      { status: 502 },
+    );
+  }
+  return new Response(upstream.body, {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "no-store",

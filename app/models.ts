@@ -1,12 +1,12 @@
 // Shared model registry. Used by the client (ModelSelector) to render choices
 // and by the API route to dispatch a request to the right provider.
 
-export type ModelId = "gemini-2.5-flash-lite" | "gpt-4.1-nano";
+export type ModelId = "gemini-2.5-flash-lite" | "gpt-4.1-nano" | "rag-v1";
 
 export type ModelInfo = {
   id: ModelId;
   label: string;
-  provider: "google" | "openai";
+  provider: "google" | "openai" | "rag";
   // Temporarily hide a model from the picker and reject it at the API.
   // Flip back to `false`/remove to re-enable.
   disabled?: boolean;
@@ -23,6 +23,14 @@ export const MODELS: readonly ModelInfo[] = [
     label: "GPT-4.1 nano",
     provider: "openai",
     disabled: true,
+  },
+  // Local RAG backend over a single net-zero report (see RAG_INTEGRATION.md).
+  // The label names the document on purpose: it answers questions about that
+  // report only, not general chat.
+  {
+    id: "rag-v1",
+    label: "Net-Zero Report (RAG)",
+    provider: "rag",
   },
 ];
 

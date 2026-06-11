@@ -5,6 +5,7 @@ import {
   expect,
   vi,
   beforeEach,
+  afterEach,
   afterAll,
 } from "vitest";
 
@@ -123,6 +124,59 @@ describe("Gemini provider (default model)", () => {
     });
     const res = await postJson({ messages: [{ role: "user", content: "hi" }] });
     await expect(res.text()).rejects.toThrow();
+  });
+});
+
+describe("RAG provider", () => {
+  const ragFetch = vi.fn();
+
+  beforeEach(() => {
+    ragFetch.mockReset();
+    process.env.RAG_SERVER_URL = "http://rag.test";
+    vi.stubGlobal("fetch", ragFetch);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const MESSAGES = [
+    { role: "user", content: "hi" },
+    { role: "assistant", content: "yo" },
+    { role: "user", content: "What is the net-zero target year?" },
+  ];
+
+  it("forwards the full history verbatim and pipes the stream through", async () => {
+    ragFetch.mockResolvedValue(new Response("Net zero by 2050 [page 3]"));
+
+    const res = await postJson({ messages: MESSAGES, model: "rag-v1" });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toMatch(/text\/plain/);
+    expect(await res.text()).toBe("Net zero by 2050 [page 3]");
+
+    expect(ragFetch).toHaveBeenCalledWith(
+      "http://rag.test/chat",
+      expect.objectContaining({ method: "POST" }),
+    );
+    const sentBody = JSON.parse(ragFetch.mock.calls[0][1].body);
+    expect(sentBody).toEqual({ messages: MESSAGES });
+  });
+
+  it("returns 502 when the RAG server responds non-200", async () => {
+    ragFetch.mockResolvedValue(new Response("boom", { status: 503 }));
+
+    const res = await postJson({ messages: MESSAGES, model: "rag-v1" });
+    expect(res.status).toBe(502);
+    expect((await res.json()).error).toMatch(/503/);
+  });
+
+  it("returns 500 when RAG_SERVER_URL is unset, without calling fetch", async () => {
+    delete process.env.RAG_SERVER_URL;
+
+    const res = await postJson({ messages: MESSAGES, model: "rag-v1" });
+    expect(res.status).toBe(500);
+    expect((await res.json()).error).toMatch(/RAG_SERVER_URL/);
+    expect(ragFetch).not.toHaveBeenCalled();
   });
 });
 

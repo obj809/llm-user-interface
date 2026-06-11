@@ -19,8 +19,12 @@ describe("ModelSelector", () => {
     await user.click(screen.getByRole("button", { name: /Gemini/ }));
 
     expect(screen.getByRole("listbox")).toBeInTheDocument();
-    // Only Gemini is enabled; GPT-4.1 nano is temporarily disabled.
-    expect(screen.getAllByRole("option")).toHaveLength(1);
+    // Gemini and the RAG model are enabled; GPT-4.1 nano is temporarily
+    // disabled.
+    expect(screen.getAllByRole("option")).toHaveLength(2);
+    expect(
+      screen.getByRole("option", { name: /Net-Zero Report \(RAG\)/ }),
+    ).toBeInTheDocument();
   });
 
   it("fires onChange and closes when an option is selected", async () => {
@@ -29,9 +33,11 @@ describe("ModelSelector", () => {
     render(<ModelSelector onChange={onChange} />);
 
     await user.click(screen.getByRole("button", { name: /Gemini/ }));
-    await user.click(screen.getByRole("option", { name: /Gemini 2\.5 Flash-Lite/ }));
+    await user.click(
+      screen.getByRole("option", { name: /Net-Zero Report \(RAG\)/ }),
+    );
 
-    expect(onChange).toHaveBeenCalledWith("gemini-2.5-flash-lite");
+    expect(onChange).toHaveBeenCalledWith("rag-v1");
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });
 
@@ -63,7 +69,7 @@ describe("ModelSelector", () => {
 
     expect(screen.getByRole("button", { name: /Gemini/ })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Gemini/ }));
-    // Only Gemini is available; selecting it keeps the label and closes.
+    // Re-selecting the current model keeps the label and closes.
     await user.click(screen.getByRole("option", { name: /Gemini 2\.5 Flash-Lite/ }));
 
     expect(
