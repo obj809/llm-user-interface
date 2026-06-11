@@ -1,6 +1,7 @@
 # LLM User Interface
 
 [![CI](https://github.com/obj809/llm-user-interface/actions/workflows/ci.yml/badge.svg)](https://github.com/obj809/llm-user-interface/actions/workflows/ci.yml)
+[![Vercel](https://img.shields.io/github/deployments/obj809/llm-user-interface/production?label=vercel&logo=vercel)](https://llm-user-interface.vercel.app/)
 
 ## Live Deployment
 
