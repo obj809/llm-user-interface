@@ -133,6 +133,7 @@ describe("RAG provider", () => {
   beforeEach(() => {
     ragFetch.mockReset();
     process.env.RAG_SERVER_URL = "http://rag.test";
+    delete process.env.RAG_API_KEY;
     vi.stubGlobal("fetch", ragFetch);
   });
 
@@ -160,6 +161,28 @@ describe("RAG provider", () => {
     );
     const sentBody = JSON.parse(ragFetch.mock.calls[0][1].body);
     expect(sentBody).toEqual({ messages: MESSAGES });
+  });
+
+  it("sends X-API-Key when RAG_API_KEY is set", async () => {
+    process.env.RAG_API_KEY = "test-secret";
+    ragFetch.mockResolvedValue(new Response("ok"));
+
+    await postJson({ messages: MESSAGES, model: "rag-v1" });
+
+    expect(ragFetch.mock.calls[0][1].headers).toEqual({
+      "Content-Type": "application/json",
+      "X-API-Key": "test-secret",
+    });
+  });
+
+  it("omits X-API-Key when RAG_API_KEY is unset", async () => {
+    ragFetch.mockResolvedValue(new Response("ok"));
+
+    await postJson({ messages: MESSAGES, model: "rag-v1" });
+
+    expect(ragFetch.mock.calls[0][1].headers).toEqual({
+      "Content-Type": "application/json",
+    });
   });
 
   it("returns 502 when the RAG server responds non-200", async () => {

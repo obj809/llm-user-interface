@@ -104,9 +104,18 @@ async function streamRag(
   base: string,
   messages: ChatMessage[],
 ): Promise<Response> {
+  // Shared-secret auth: only sent when configured, so a keyless local
+  // backend keeps working without the env var.
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (process.env.RAG_API_KEY) {
+    headers["X-API-Key"] = process.env.RAG_API_KEY;
+  }
+
   const upstream = await fetch(`${base}/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     // Full history, verbatim — the backend uses the last user message as the
     // query today but accepts the whole conversation.
     body: JSON.stringify({ messages }),
