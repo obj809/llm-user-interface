@@ -79,3 +79,4 @@ tests/                    Vitest suites, mirroring the app/ layout
 
 Models are defined once in `app/models.ts` and shared by the client selector and
 the API route — add a model in one place.
+
