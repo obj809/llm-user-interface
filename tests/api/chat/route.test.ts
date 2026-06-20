@@ -9,19 +9,13 @@ import {
   afterAll,
 } from "vitest";
 
-// Shared mock fns for the two provider SDKs, created before the module mocks
-// run (vi.hoisted) so the factories can close over them.
-const { generateContentStream, openaiCreate } = vi.hoisted(() => ({
-  generateContentStream: vi.fn(),
+// Mock the OpenAI SDK (used for the LiteLLM gateway). Created via vi.hoisted so
+// the module-mock factory can close over it.
+const { openaiCreate } = vi.hoisted(() => ({
   openaiCreate: vi.fn(),
 }));
 
-// Regular functions (not arrows) so they're usable as constructors (`new`).
-vi.mock("@google/genai", () => ({
-  GoogleGenAI: vi.fn(function () {
-    return { models: { generateContentStream } };
-  }),
-}));
+// Regular function (not an arrow) so it's usable as a constructor (`new`).
 vi.mock("openai", () => ({
   default: vi.fn(function () {
     return { chat: { completions: { create: openaiCreate } } };
@@ -32,6 +26,11 @@ import { POST } from "@/app/api/chat/route";
 
 async function* asyncChunks<T>(chunks: T[]) {
   for (const chunk of chunks) yield chunk;
+}
+
+// Build an OpenAI-style streaming chunk for a content delta.
+function delta(content: string) {
+  return { choices: [{ delta: { content } }] };
 }
 
 function postJson(body: unknown) {
@@ -47,10 +46,9 @@ function postJson(body: unknown) {
 const ORIGINAL_ENV = { ...process.env };
 
 beforeEach(() => {
-  generateContentStream.mockReset();
   openaiCreate.mockReset();
-  process.env.GEMINI_API_KEY = "test-gemini-key";
-  process.env.OPENAI_API_KEY = "test-openai-key";
+  process.env.LITELLM_BASE_URL = "http://litellm.test/v1";
+  process.env.LITELLM_API_KEY = "test-litellm-key";
 });
 
 afterAll(() => {
@@ -79,18 +77,18 @@ describe("validation", () => {
     expect((await res.json()).error).toMatch(/Unknown model/i);
   });
 
-  it("returns 500 when the selected provider's key is missing", async () => {
-    delete process.env.GEMINI_API_KEY;
+  it("returns 500 when the LiteLLM gateway config is missing", async () => {
+    delete process.env.LITELLM_API_KEY;
     const res = await postJson({ messages: [{ role: "user", content: "hi" }] });
     expect(res.status).toBe(500);
-    expect((await res.json()).error).toMatch(/GEMINI_API_KEY/);
+    expect((await res.json()).error).toMatch(/LITELLM/);
   });
 });
 
-describe("Gemini provider (default model)", () => {
+describe("LiteLLM gateway (default model)", () => {
   it("streams concatenated chunks as text/plain", async () => {
-    generateContentStream.mockReturnValue(
-      asyncChunks([{ text: "Hello" }, { text: ", world" }]),
+    openaiCreate.mockResolvedValue(
+      asyncChunks([delta("Hello"), delta(", world")]),
     );
     const res = await postJson({ messages: [{ role: "user", content: "hi" }] });
     expect(res.status).toBe(200);
@@ -98,30 +96,23 @@ describe("Gemini provider (default model)", () => {
     expect(await res.text()).toBe("Hello, world");
   });
 
-  it("maps roles to Gemini's contents format (assistant -> model)", async () => {
-    generateContentStream.mockReturnValue(asyncChunks([{ text: "ok" }]));
-    await (
-      await postJson({
-        messages: [
-          { role: "user", content: "hi" },
-          { role: "assistant", content: "yo" },
-        ],
-      })
-    ).text();
+  it("passes the model id and messages through to the gateway", async () => {
+    openaiCreate.mockResolvedValue(asyncChunks([delta("ok")]));
+    const messages = [
+      { role: "user", content: "hi" },
+      { role: "assistant", content: "yo" },
+    ];
+    await (await postJson({ messages })).text();
 
-    expect(generateContentStream).toHaveBeenCalledWith({
-      model: "gemini-2.5-flash-lite",
-      contents: [
-        { role: "user", parts: [{ text: "hi" }] },
-        { role: "model", parts: [{ text: "yo" }] },
-      ],
+    expect(openaiCreate).toHaveBeenCalledWith({
+      model: "gemini-flash",
+      messages,
+      stream: true,
     });
   });
 
-  it("propagates a provider error onto the stream", async () => {
-    generateContentStream.mockImplementation(() => {
-      throw new Error("boom");
-    });
+  it("propagates a gateway error onto the stream", async () => {
+    openaiCreate.mockRejectedValue(new Error("boom"));
     const res = await postJson({ messages: [{ role: "user", content: "hi" }] });
     await expect(res.text()).rejects.toThrow();
   });
@@ -134,6 +125,8 @@ describe("RAG provider", () => {
     ragFetch.mockReset();
     process.env.RAG_SERVER_URL = "http://rag.test";
     delete process.env.RAG_API_KEY;
+    delete process.env.CF_ACCESS_CLIENT_ID;
+    delete process.env.CF_ACCESS_CLIENT_SECRET;
     vi.stubGlobal("fetch", ragFetch);
   });
 
@@ -185,6 +178,31 @@ describe("RAG provider", () => {
     });
   });
 
+  it("sends the Cloudflare Access service-token headers when both are set", async () => {
+    process.env.CF_ACCESS_CLIENT_ID = "cf-id";
+    process.env.CF_ACCESS_CLIENT_SECRET = "cf-secret";
+    ragFetch.mockResolvedValue(new Response("ok"));
+
+    await postJson({ messages: MESSAGES, model: "rag-v1" });
+
+    expect(ragFetch.mock.calls[0][1].headers).toEqual({
+      "Content-Type": "application/json",
+      "CF-Access-Client-Id": "cf-id",
+      "CF-Access-Client-Secret": "cf-secret",
+    });
+  });
+
+  it("omits the CF headers when only one of the pair is set", async () => {
+    process.env.CF_ACCESS_CLIENT_ID = "cf-id";
+    ragFetch.mockResolvedValue(new Response("ok"));
+
+    await postJson({ messages: MESSAGES, model: "rag-v1" });
+
+    expect(ragFetch.mock.calls[0][1].headers).toEqual({
+      "Content-Type": "application/json",
+    });
+  });
+
   it("returns 502 when the RAG server responds non-200", async () => {
     ragFetch.mockResolvedValue(new Response("boom", { status: 503 }));
 
@@ -203,11 +221,11 @@ describe("RAG provider", () => {
   });
 });
 
-describe("OpenAI provider (temporarily disabled)", () => {
-  it("rejects the disabled openai model with 400 and never calls the SDK", async () => {
+describe("disabled model", () => {
+  it("rejects the disabled gpt model with 400 and never calls the gateway", async () => {
     const res = await postJson({
       messages: [{ role: "user", content: "hi" }],
-      model: "gpt-4.1-nano",
+      model: "gpt-5.4-mini",
     });
     expect(res.status).toBe(400);
     expect((await res.json()).error).toMatch(/unavailable/i);

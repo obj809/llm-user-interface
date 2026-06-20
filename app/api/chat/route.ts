@@ -1,5 +1,9 @@
-import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
+// Direct-Gemini path (commented out): handy for local development without the
+// VPS LiteLLM gateway. To re-enable, uncomment this import and `streamGemini`
+// below, set a model's `provider` to "google" in app/models.ts, dispatch it to
+// `streamGemini`, and provide GEMINI_API_KEY.
+// import { GoogleGenAI } from "@google/genai";
 import { DEFAULT_MODEL_ID, getModel } from "@/app/models";
 
 export const runtime = "nodejs";
@@ -46,7 +50,7 @@ export async function POST(request: Request) {
   }
 
   // The RAG provider proxies an external server and returns its own
-  // Response, so it branches off before the provider API-key check.
+  // Response, so it branches off before the LiteLLM gateway path.
   if (model.provider === "rag") {
     const base = process.env.RAG_SERVER_URL;
     if (!base) {
@@ -58,15 +62,13 @@ export async function POST(request: Request) {
     return streamRag(base, messages);
   }
 
-  const apiKey =
-    model.provider === "openai"
-      ? process.env.OPENAI_API_KEY
-      : process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    const envName =
-      model.provider === "openai" ? "OPENAI_API_KEY" : "GEMINI_API_KEY";
+  // Every other model is served through the LiteLLM gateway on the VPS, which
+  // is OpenAI-compatible — so a single client covers GPT, Gemini, and Ollama.
+  const baseURL = process.env.LITELLM_BASE_URL;
+  const apiKey = process.env.LITELLM_API_KEY;
+  if (!baseURL || !apiKey) {
     return Response.json(
-      { error: `${envName} is not set on the server.` },
+      { error: "LITELLM_BASE_URL and LITELLM_API_KEY must be set on the server." },
       { status: 500 },
     );
   }
@@ -75,11 +77,14 @@ export async function POST(request: Request) {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        if (model.provider === "openai") {
-          await streamOpenAI(apiKey, model.id, messages, controller, encoder);
-        } else {
-          await streamGemini(apiKey, model.id, messages, controller, encoder);
-        }
+        await streamLiteLLM(
+          baseURL,
+          apiKey,
+          model.upstreamModel ?? model.id,
+          messages,
+          controller,
+          encoder,
+        );
         controller.close();
       } catch (error) {
         controller.error(error);
@@ -95,22 +100,28 @@ export async function POST(request: Request) {
   });
 }
 
-// Proxy to the external RAG backend (see RAG_INTEGRATION.md). Unlike the SDK
-// providers below, this is a pass-through: the upstream body streams to the
-// client verbatim, and an upstream failure before any bytes flow becomes a
-// real non-200 (the controller-callback style can only error an already
-// started 200 stream).
+// Proxy to the external RAG backend. Unlike the gateway path below, this is a
+// pass-through: the upstream body streams to the client verbatim, and an
+// upstream failure before any bytes flow becomes a real non-200 (the
+// controller-callback style can only error an already started 200 stream).
 async function streamRag(
   base: string,
   messages: ChatMessage[],
 ): Promise<Response> {
-  // Shared-secret auth: only sent when configured, so a keyless local
-  // backend keeps working without the env var.
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
+  // Origin shared-secret auth: only sent when configured, so a keyless local
+  // backend keeps working without the env var.
   if (process.env.RAG_API_KEY) {
     headers["X-API-Key"] = process.env.RAG_API_KEY;
+  }
+  // Cloudflare Access service token: when the RAG host sits behind a Cloudflare
+  // Access policy, these let this server through while the public is blocked at
+  // the edge. Both are required, so only send the pair when both are set.
+  if (process.env.CF_ACCESS_CLIENT_ID && process.env.CF_ACCESS_CLIENT_SECRET) {
+    headers["CF-Access-Client-Id"] = process.env.CF_ACCESS_CLIENT_ID;
+    headers["CF-Access-Client-Secret"] = process.env.CF_ACCESS_CLIENT_SECRET;
   }
 
   const upstream = await fetch(`${base}/chat`, {
@@ -134,36 +145,18 @@ async function streamRag(
   });
 }
 
-async function streamGemini(
+// LiteLLM speaks the OpenAI API, so the same SDK drives the gateway by pointing
+// `baseURL` at it. Roles (`user`/`assistant`) pass through unchanged.
+async function streamLiteLLM(
+  baseURL: string,
   apiKey: string,
   model: string,
   messages: ChatMessage[],
   controller: ReadableStreamDefaultController<Uint8Array>,
   encoder: TextEncoder,
 ) {
-  const ai = new GoogleGenAI({ apiKey });
-  // Map the UI's messages to Gemini's `contents` format.
-  const contents = messages.map((message) => ({
-    role: message.role === "assistant" ? "model" : "user",
-    parts: [{ text: message.content }],
-  }));
-
-  const result = await ai.models.generateContentStream({ model, contents });
-  for await (const chunk of result) {
-    if (chunk.text) controller.enqueue(encoder.encode(chunk.text));
-  }
-}
-
-async function streamOpenAI(
-  apiKey: string,
-  model: string,
-  messages: ChatMessage[],
-  controller: ReadableStreamDefaultController<Uint8Array>,
-  encoder: TextEncoder,
-) {
-  const openai = new OpenAI({ apiKey });
-  // OpenAI's chat roles (`user`/`assistant`) match the UI's directly.
-  const result = await openai.chat.completions.create({
+  const client = new OpenAI({ baseURL, apiKey });
+  const result = await client.chat.completions.create({
     model,
     messages,
     stream: true,
@@ -173,3 +166,29 @@ async function streamOpenAI(
     if (text) controller.enqueue(encoder.encode(text));
   }
 }
+
+// Direct-Gemini path — preserved for local development without the LiteLLM
+// gateway. To use: uncomment the `@google/genai` import above and this
+// function, set the model's `provider` to "google" in app/models.ts, dispatch
+// it here (e.g. `if (model.provider === "google") await streamGemini(...)`),
+// and set GEMINI_API_KEY.
+//
+// async function streamGemini(
+//   apiKey: string,
+//   model: string,
+//   messages: ChatMessage[],
+//   controller: ReadableStreamDefaultController<Uint8Array>,
+//   encoder: TextEncoder,
+// ) {
+//   const ai = new GoogleGenAI({ apiKey });
+//   // Map the UI's messages to Gemini's `contents` format.
+//   const contents = messages.map((message) => ({
+//     role: message.role === "assistant" ? "model" : "user",
+//     parts: [{ text: message.content }],
+//   }));
+//
+//   const result = await ai.models.generateContentStream({ model, contents });
+//   for await (const chunk of result) {
+//     if (chunk.text) controller.enqueue(encoder.encode(chunk.text));
+//   }
+// }

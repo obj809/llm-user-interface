@@ -5,22 +5,23 @@ import ModelSelector from "@/app/components/ModelSelector";
 
 describe("ModelSelector", () => {
   it("shows the selected model's label", () => {
-    render(<ModelSelector value="gemini-2.5-flash-lite" />);
+    render(<ModelSelector value="gemini-2.5-flash" />);
     expect(
-      screen.getByRole("button", { name: /Gemini 2\.5 Flash-Lite/ }),
+      screen.getByRole("button", { name: /Gemini 2\.5 Flash/ }),
     ).toBeInTheDocument();
   });
 
   it("opens the menu and lists every available model", async () => {
     const user = userEvent.setup();
-    render(<ModelSelector value="gemini-2.5-flash-lite" />);
+    render(<ModelSelector value="gemini-2.5-flash" />);
 
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Gemini/ }));
 
     expect(screen.getByRole("listbox")).toBeInTheDocument();
-    // Gemini and the RAG model are enabled; GPT-4.1 nano is temporarily
-    // disabled.
+    // Gemini and the RAG model are enabled; GPT-5.4 mini and Claude Haiku 4.5
+    // are disabled, and the local Ollama models (Llama 3.2, DeepSeek-R1) are
+    // commented out.
     expect(screen.getAllByRole("option")).toHaveLength(2);
     expect(
       screen.getByRole("option", { name: /Net-Zero Report \(RAG\)/ }),
@@ -43,7 +44,7 @@ describe("ModelSelector", () => {
 
   it("closes on Escape", async () => {
     const user = userEvent.setup();
-    render(<ModelSelector value="gemini-2.5-flash-lite" />);
+    render(<ModelSelector value="gemini-2.5-flash" />);
 
     await user.click(screen.getByRole("button", { name: /Gemini/ }));
     expect(screen.getByRole("listbox")).toBeInTheDocument();
@@ -54,7 +55,7 @@ describe("ModelSelector", () => {
 
   it("closes on an outside click", async () => {
     const user = userEvent.setup();
-    render(<ModelSelector value="gemini-2.5-flash-lite" />);
+    render(<ModelSelector value="gemini-2.5-flash" />);
 
     await user.click(screen.getByRole("button", { name: /Gemini/ }));
     expect(screen.getByRole("listbox")).toBeInTheDocument();
@@ -70,10 +71,10 @@ describe("ModelSelector", () => {
     expect(screen.getByRole("button", { name: /Gemini/ })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Gemini/ }));
     // Re-selecting the current model keeps the label and closes.
-    await user.click(screen.getByRole("option", { name: /Gemini 2\.5 Flash-Lite/ }));
+    await user.click(screen.getByRole("option", { name: /Gemini 2\.5 Flash/ }));
 
     expect(
-      screen.getByRole("button", { name: /Gemini 2\.5 Flash-Lite/ }),
+      screen.getByRole("button", { name: /Gemini 2\.5 Flash/ }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });

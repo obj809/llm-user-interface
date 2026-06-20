@@ -3,8 +3,8 @@ import { MODELS, DEFAULT_MODEL_ID, getModel } from "@/app/models";
 
 describe("getModel", () => {
   it("returns the matching model for a known id", () => {
-    expect(getModel("gemini-2.5-flash-lite")?.provider).toBe("google");
-    expect(getModel("gpt-4.1-nano")?.provider).toBe("openai");
+    expect(getModel("gemini-2.5-flash")?.provider).toBe("litellm");
+    expect(getModel("gpt-5.4-mini")?.provider).toBe("litellm");
     expect(getModel("rag-v1")?.provider).toBe("rag");
   });
 
@@ -28,7 +28,7 @@ describe("MODELS registry", () => {
     for (const model of MODELS) {
       expect(model.id).toBeTruthy();
       expect(model.label).toBeTruthy();
-      expect(["google", "openai", "rag"]).toContain(model.provider);
+      expect(["litellm", "rag", "google"]).toContain(model.provider);
     }
   });
 });
