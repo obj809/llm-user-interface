@@ -30,7 +30,7 @@ const components: Components = {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-blue-600 underline underline-offset-2 hover:opacity-80 dark:text-blue-400"
+      className="break-words text-blue-600 underline underline-offset-2 hover:opacity-80 dark:text-blue-400"
     >
       {children}
     </a>
@@ -75,7 +75,7 @@ const components: Components = {
 
 export default function Markdown({ content }: { content: string }) {
   return (
-    <div className="text-lg text-zinc-900 dark:text-zinc-100">
+    <div className="break-words text-base text-zinc-900 sm:text-lg dark:text-zinc-100">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>

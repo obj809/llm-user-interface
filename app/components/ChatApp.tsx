@@ -210,7 +210,7 @@ export default function ChatApp() {
 
   // Fixed top-right toolbar: theme toggle, with the home button to its right.
   const toolbar = (
-    <div className="fixed right-6 top-4 z-10 flex items-center gap-1">
+    <div className="fixed right-3 top-3 z-10 flex items-center gap-1 sm:right-6 sm:top-4">
       <ThemeToggle />
       <HomeButton onClick={handleHome} />
     </div>
@@ -222,7 +222,7 @@ export default function ChatApp() {
       <>
         {toolbar}
         <div className="flex flex-1 flex-col items-center justify-center px-4">
-          <h1 className="mb-8 text-center font-serif text-5xl tracking-tight text-[#5b6650] dark:text-[#c8ccbf]">
+          <h1 className="mb-6 text-center font-serif text-3xl tracking-tight text-[#5b6650] sm:mb-8 sm:text-4xl md:text-5xl dark:text-[#c8ccbf]">
             LLM User Interface
           </h1>
           <ChatBox
@@ -253,7 +253,7 @@ export default function ChatApp() {
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {toolbar}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[52rem] px-4 py-8">
+        <div className="mx-auto w-full max-w-[52rem] px-4 pb-8 pt-12 sm:pt-8">
           {turns.map((turn, i) => {
             const isLast = i === turns.length - 1;
             return (

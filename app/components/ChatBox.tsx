@@ -40,7 +40,7 @@ export default function ChatBox({
   };
 
   return (
-    <div className="relative w-full max-w-[52rem] rounded-[28px] border border-zinc-300 bg-white px-5 pb-3 pt-5 shadow-2xl dark:border-zinc-700/60 dark:bg-[#1c1c1c]">
+    <div className="relative w-full max-w-[52rem] rounded-[28px] border border-zinc-300 bg-white px-4 pb-3 pt-4 shadow-2xl sm:px-5 sm:pt-5 dark:border-zinc-700/60 dark:bg-[#1c1c1c]">
       {/* Input */}
       <textarea
         value={value}
@@ -48,11 +48,11 @@ export default function ChatBox({
         onKeyDown={handleKeyDown}
         rows={2}
         placeholder={placeholder}
-        className="block w-full resize-none bg-transparent text-lg text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-100 dark:placeholder:text-zinc-500"
+        className="block w-full resize-none bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none sm:text-lg dark:text-zinc-100 dark:placeholder:text-zinc-500"
       />
 
       {/* Bottom toolbar */}
-      <div className="mt-6 flex items-center justify-end">
+      <div className="mt-4 flex items-center justify-end sm:mt-6">
         <div className="flex items-center gap-4">
           <ModelSelector
             dropUp={modelMenuDropUp}
