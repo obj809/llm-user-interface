@@ -24,7 +24,7 @@ describe("ModelSelector", () => {
     // commented out.
     expect(screen.getAllByRole("option")).toHaveLength(2);
     expect(
-      screen.getByRole("option", { name: /Net-Zero Report \(RAG\)/ }),
+      screen.getByRole("option", { name: /EPBC Act 1999 \(RAG\)/ }),
     ).toBeInTheDocument();
   });
 
@@ -35,7 +35,7 @@ describe("ModelSelector", () => {
 
     await user.click(screen.getByRole("button", { name: /Gemini/ }));
     await user.click(
-      screen.getByRole("option", { name: /Net-Zero Report \(RAG\)/ }),
+      screen.getByRole("option", { name: /EPBC Act 1999 \(RAG\)/ }),
     );
 
     expect(onChange).toHaveBeenCalledWith("rag-v1");

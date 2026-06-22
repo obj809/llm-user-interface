@@ -71,12 +71,12 @@ export const MODELS: readonly ModelInfo[] = [
     upstreamModel: "claude-haiku-4-5",
     disabled: true,
   },
-  // Standalone RAG backend over a single net-zero report. The label names the
+  // Standalone RAG backend over the EPBC Act 1999. The label names the
   // document on purpose: it answers questions about that report only, not
   // general chat.
   {
     id: "rag-v1",
-    label: "Net-Zero Report (RAG)",
+    label: "EPBC Act 1999 (RAG)",
     provider: "rag",
   },
 ];
