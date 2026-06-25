@@ -19,10 +19,12 @@ describe("ModelSelector", () => {
     await user.click(screen.getByRole("button", { name: /Gemini/ }));
 
     expect(screen.getByRole("listbox")).toBeInTheDocument();
-    // Gemini and the RAG model are enabled; GPT-5.4 mini and Claude Haiku 4.5
-    // are disabled, and the local Ollama models (Llama 3.2, DeepSeek-R1) are
-    // commented out.
-    expect(screen.getAllByRole("option")).toHaveLength(2);
+    // Gemini, Llama 3.2 (local), and the RAG model are enabled; GPT-5.4 mini
+    // and Claude Haiku 4.5 are disabled, and DeepSeek-R1 is commented out.
+    expect(screen.getAllByRole("option")).toHaveLength(3);
+    expect(
+      screen.getByRole("option", { name: /Llama 3\.2 \(local\)/ }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("option", { name: /EPBC Act 1999 \(RAG\)/ }),
     ).toBeInTheDocument();
