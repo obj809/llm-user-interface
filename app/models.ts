@@ -3,8 +3,8 @@
 
 export type ModelId =
   | "gemini-2.5-flash"
-  // | "llama3.2"      // hidden from UI; see the commented entries in MODELS below
-  // | "deepseek-r1"   // hidden from UI; see the commented entries in MODELS below
+  | "llama3.2"
+  // | "deepseek-r1"   // hidden from UI; see the commented entry in MODELS below
   | "gpt-5.4-mini"
   | "claude-haiku-4-5"
   | "rag-v1";
@@ -39,17 +39,17 @@ export const MODELS: readonly ModelInfo[] = [
     provider: "litellm",
     upstreamModel: "gemini-flash",
   },
-  // Local models served through the Ollama container behind the LiteLLM
-  // gateway. Each id already equals the gateway `model_name`, so `upstreamModel`
-  // is omitted (the route falls back to `id`). Both stay registered in the
-  // gateway but are hidden from the UI for now: on CPU they're slow (DeepSeek-R1
-  // is a reasoning model and takes minutes per reply). Uncomment an entry (and
-  // its `ModelId` union member above) to surface it again.
-  // {
-  //   id: "llama3.2",
-  //   label: "Llama 3.2 (local)",
-  //   provider: "litellm",
-  // },
+  // Local model served through the Ollama container behind the LiteLLM
+  // gateway. The id already equals the gateway `model_name`, so `upstreamModel`
+  // is omitted (the route falls back to `id`). Note: on CPU it's slow.
+  {
+    id: "llama3.2",
+    label: "Llama 3.2 (local)",
+    provider: "litellm",
+  },
+  // DeepSeek-R1 is registered in the gateway but hidden from the UI: it's a
+  // reasoning model and takes minutes per reply on CPU. Uncomment this entry
+  // (and its `ModelId` union member above) to surface it again.
   // {
   //   id: "deepseek-r1",
   //   label: "DeepSeek-R1 (local)",

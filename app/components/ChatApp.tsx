@@ -122,7 +122,7 @@ export default function ChatApp() {
 
     setMessages([
       ...history,
-      { id: assistantId, role: "assistant", content: "" },
+      { id: assistantId, role: "assistant", content: "", model },
     ]);
     followRef.current = true; // follow the new reply until the user scrolls up
     setThinking(true);

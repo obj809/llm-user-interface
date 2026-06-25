@@ -3,11 +3,15 @@
 import { useState } from "react";
 import Markdown from "./Markdown";
 import { copyToClipboard } from "../clipboard";
+import { getModel, type ModelId } from "../models";
 
 export type Message = {
   id: number;
   role: "user" | "assistant";
   content: string;
+  // Which model produced this reply. Set on assistant messages; the UI labels
+  // the response with it so mixed-model conversations stay attributable.
+  model?: ModelId;
 };
 
 export default function ChatMessage({ message }: { message: Message }) {
@@ -29,6 +33,8 @@ export default function ChatMessage({ message }: { message: Message }) {
     );
   }
 
+  const modelLabel = message.model ? getModel(message.model)?.label : undefined;
+
   return (
     <div className="space-y-3">
       <Markdown content={message.content} />
@@ -36,6 +42,11 @@ export default function ChatMessage({ message }: { message: Message }) {
         <ActionButton label={copied ? "Copied" : "Copy"} onClick={handleCopy}>
           {copied ? <CheckIcon /> : <CopyIcon />}
         </ActionButton>
+        {modelLabel && (
+          <span className="ml-1 text-xs text-zinc-400 dark:text-zinc-500">
+            {modelLabel}
+          </span>
+        )}
       </div>
     </div>
   );
