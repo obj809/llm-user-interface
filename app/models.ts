@@ -29,15 +29,16 @@ export type ModelInfo = {
 };
 
 export const MODELS: readonly ModelInfo[] = [
+  // Registered in the gateway but parked behind `disabled`; flip to re-enable.
+  // The UI id stays friendly while `upstreamModel` matches the `model_name`
+  // registered in the gateway config. For local dev you can switch this to
+  // `provider: "google"` and re-enable the direct path in the API route.
   {
     id: "gemini-2.5-flash",
     label: "Gemini 2.5 Flash",
-    // Served via the LiteLLM gateway. The UI id stays friendly while
-    // `upstreamModel` matches the `model_name` registered in the gateway config.
-    // For local dev you can switch this to `provider: "google"` and re-enable
-    // the direct path in the API route.
     provider: "litellm",
     upstreamModel: "gemini-flash",
+    disabled: true,
   },
   // Local model served through the Ollama container behind the LiteLLM
   // gateway. The id already equals the gateway `model_name`, so `upstreamModel`
@@ -55,15 +56,15 @@ export const MODELS: readonly ModelInfo[] = [
   //   label: "DeepSeek-R1 (local)",
   //   provider: "litellm",
   // },
-  // Registered in the gateway but parked behind `disabled` until we surface it;
-  // flip `disabled` to re-enable.
+  // Served via the LiteLLM gateway; the picker's default surfaced model.
   {
     id: "gpt-5.4-mini",
     label: "GPT-5.4 mini",
     provider: "litellm",
     upstreamModel: "gpt-5.4-mini",
-    disabled: true,
   },
+  // Registered in the gateway but parked behind `disabled` until we surface it;
+  // flip `disabled` to re-enable.
   {
     id: "claude-haiku-4-5",
     label: "Claude Haiku 4.5",
@@ -86,7 +87,7 @@ export const AVAILABLE_MODELS: readonly ModelInfo[] = MODELS.filter(
   (m) => !m.disabled,
 );
 
-export const DEFAULT_MODEL_ID: ModelId = "gemini-2.5-flash";
+export const DEFAULT_MODEL_ID: ModelId = "gpt-5.4-mini";
 
 export function getModel(id: string): ModelInfo | undefined {
   return MODELS.find((m) => m.id === id);

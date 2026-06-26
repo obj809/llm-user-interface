@@ -5,23 +5,27 @@ import ModelSelector from "@/app/components/ModelSelector";
 
 describe("ModelSelector", () => {
   it("shows the selected model's label", () => {
-    render(<ModelSelector value="gemini-2.5-flash" />);
+    render(<ModelSelector value="gpt-5.4-mini" />);
     expect(
-      screen.getByRole("button", { name: /Gemini 2\.5 Flash/ }),
+      screen.getByRole("button", { name: /GPT-5\.4 mini/ }),
     ).toBeInTheDocument();
   });
 
   it("opens the menu and lists every available model", async () => {
     const user = userEvent.setup();
-    render(<ModelSelector value="gemini-2.5-flash" />);
+    render(<ModelSelector value="gpt-5.4-mini" />);
 
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /Gemini/ }));
+    await user.click(screen.getByRole("button", { name: /GPT-5\.4 mini/ }));
 
     expect(screen.getByRole("listbox")).toBeInTheDocument();
-    // Gemini, Llama 3.2 (local), and the RAG model are enabled; GPT-5.4 mini
-    // and Claude Haiku 4.5 are disabled, and DeepSeek-R1 is commented out.
+    // GPT-5.4 mini, Llama 3.2 (local), and the RAG model are enabled; Gemini
+    // 2.5 Flash and Claude Haiku 4.5 are disabled, and DeepSeek-R1 is commented
+    // out.
     expect(screen.getAllByRole("option")).toHaveLength(3);
+    expect(
+      screen.getByRole("option", { name: /GPT-5\.4 mini/ }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("option", { name: /Llama 3\.2 \(local\)/ }),
     ).toBeInTheDocument();
@@ -35,7 +39,7 @@ describe("ModelSelector", () => {
     const onChange = vi.fn();
     render(<ModelSelector onChange={onChange} />);
 
-    await user.click(screen.getByRole("button", { name: /Gemini/ }));
+    await user.click(screen.getByRole("button", { name: /GPT-5\.4 mini/ }));
     await user.click(
       screen.getByRole("option", { name: /EPBC Act 1999 \(RAG\)/ }),
     );
@@ -46,9 +50,9 @@ describe("ModelSelector", () => {
 
   it("closes on Escape", async () => {
     const user = userEvent.setup();
-    render(<ModelSelector value="gemini-2.5-flash" />);
+    render(<ModelSelector value="gpt-5.4-mini" />);
 
-    await user.click(screen.getByRole("button", { name: /Gemini/ }));
+    await user.click(screen.getByRole("button", { name: /GPT-5\.4 mini/ }));
     expect(screen.getByRole("listbox")).toBeInTheDocument();
 
     await user.keyboard("{Escape}");
@@ -57,9 +61,9 @@ describe("ModelSelector", () => {
 
   it("closes on an outside click", async () => {
     const user = userEvent.setup();
-    render(<ModelSelector value="gemini-2.5-flash" />);
+    render(<ModelSelector value="gpt-5.4-mini" />);
 
-    await user.click(screen.getByRole("button", { name: /Gemini/ }));
+    await user.click(screen.getByRole("button", { name: /GPT-5\.4 mini/ }));
     expect(screen.getByRole("listbox")).toBeInTheDocument();
 
     fireEvent.mouseDown(document.body);
@@ -68,15 +72,17 @@ describe("ModelSelector", () => {
 
   it("keeps the label and closes when used uncontrolled", async () => {
     const user = userEvent.setup();
-    render(<ModelSelector />); // no value -> uncontrolled, defaults to Gemini
-
-    expect(screen.getByRole("button", { name: /Gemini/ })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /Gemini/ }));
-    // Re-selecting the current model keeps the label and closes.
-    await user.click(screen.getByRole("option", { name: /Gemini 2\.5 Flash/ }));
+    render(<ModelSelector />); // no value -> uncontrolled, defaults to GPT-5.4 mini
 
     expect(
-      screen.getByRole("button", { name: /Gemini 2\.5 Flash/ }),
+      screen.getByRole("button", { name: /GPT-5\.4 mini/ }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /GPT-5\.4 mini/ }));
+    // Re-selecting the current model keeps the label and closes.
+    await user.click(screen.getByRole("option", { name: /GPT-5\.4 mini/ }));
+
+    expect(
+      screen.getByRole("button", { name: /GPT-5\.4 mini/ }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });
