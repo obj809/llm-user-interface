@@ -10,6 +10,10 @@ type ChatBoxProps = {
   placeholder?: string;
   modelMenuDropUp?: boolean;
   disabled?: boolean;
+  // While a reply streams, the send button becomes a stop button that calls
+  // `onStop` instead of submitting.
+  streaming?: boolean;
+  onStop?: () => void;
   model?: ModelId;
   onModelChange?: (model: ModelId) => void;
 };
@@ -19,6 +23,8 @@ export default function ChatBox({
   placeholder = "How can I help you today?",
   modelMenuDropUp = false,
   disabled = false,
+  streaming = false,
+  onStop,
   model,
   onModelChange,
 }: ChatBoxProps) {
@@ -59,7 +65,10 @@ export default function ChatBox({
             value={model}
             onChange={onModelChange}
           />
-          <SendButton onClick={submit} />
+          <SendButton
+            streaming={streaming}
+            onClick={streaming ? onStop : submit}
+          />
         </div>
       </div>
     </div>

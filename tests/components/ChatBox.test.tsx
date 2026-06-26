@@ -60,4 +60,20 @@ describe("ChatBox", () => {
 
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it("calls onStop instead of onSubmit when the stop button is clicked", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    const onStop = vi.fn();
+    render(
+      <ChatBox onSubmit={onSubmit} onStop={onStop} streaming disabled />,
+    );
+
+    // The textarea still holds text, but the button now stops the stream.
+    await user.type(screen.getByRole("textbox"), "ignored");
+    await user.click(screen.getByRole("button", { name: /stop response/i }));
+
+    expect(onStop).toHaveBeenCalledTimes(1);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
 });

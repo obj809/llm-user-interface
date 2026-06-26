@@ -22,4 +22,17 @@ describe("SendButton", () => {
     await user.click(screen.getByRole("button", { name: /send message/i }));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  it("becomes a stop button while streaming", async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(<SendButton onClick={onClick} streaming />);
+
+    expect(
+      screen.queryByRole("button", { name: /send message/i }),
+    ).not.toBeInTheDocument();
+    const stop = screen.getByRole("button", { name: /stop response/i });
+    await user.click(stop);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
 });

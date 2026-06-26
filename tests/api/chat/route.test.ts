@@ -23,6 +23,12 @@ vi.mock("openai", () => ({
 }));
 
 import { POST } from "@/app/api/chat/route";
+import { DEFAULT_MODEL_ID, getModel } from "@/app/models";
+
+// The upstream model name the gateway should receive for the default model,
+// derived from the registry so swapping the default doesn't break this test.
+const DEFAULT_UPSTREAM_MODEL =
+  getModel(DEFAULT_MODEL_ID)!.upstreamModel ?? DEFAULT_MODEL_ID;
 
 async function* asyncChunks<T>(chunks: T[]) {
   for (const chunk of chunks) yield chunk;
@@ -105,7 +111,7 @@ describe("LiteLLM gateway (default model)", () => {
     await (await postJson({ messages })).text();
 
     expect(openaiCreate).toHaveBeenCalledWith({
-      model: "gemini-flash",
+      model: DEFAULT_UPSTREAM_MODEL,
       messages,
       stream: true,
     });

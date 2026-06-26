@@ -20,6 +20,11 @@ export default function ChatApp() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastTurnRef = useRef<HTMLDivElement>(null);
   const idCounter = useRef(0);
+  // In-flight stream controls: `abortRef` cancels the network read; `stoppedRef`
+  // signals a user-initiated stop so the typewriter freezes at the revealed
+  // text and the catch skips the error message.
+  const abortRef = useRef<AbortController | null>(null);
+  const stoppedRef = useRef(false);
   // Whether to keep the streaming reply pinned to the bottom of the viewport.
   // True until the user scrolls up to read; resumes when they return.
   const followRef = useRef(true);
@@ -128,6 +133,10 @@ export default function ChatApp() {
     setThinking(true);
     setIsStreaming(true);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+    stoppedRef.current = false;
+
     // Decouple received text from displayed text: chunks arrive in bursts,
     // so we buffer them in `target` and reveal characters smoothly via rAF.
     let target = "";
@@ -138,6 +147,12 @@ export default function ChatApp() {
       let shown = 0;
       let shownFirst = false;
       const tick = () => {
+        // A user stop freezes the reveal at the current slice and lets
+        // `await typing` resolve so the finally block can reset state.
+        if (stoppedRef.current) {
+          resolve();
+          return;
+        }
         if (shown < target.length) {
           // Reveal a fraction of the remaining buffer so it keeps pace with
           // fast streams while still feeling like steady typing.
@@ -171,6 +186,7 @@ export default function ChatApp() {
           messages: history.map(({ role, content }) => ({ role, content })),
           model,
         }),
+        signal: controller.signal,
       });
       if (!res.ok || !res.body) throw new Error(`Request failed: ${res.status}`);
 
@@ -187,22 +203,36 @@ export default function ChatApp() {
     } catch {
       streamDone = true;
       cancelAnimationFrame(rafId);
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId ? { ...m, content: ERROR_MESSAGE } : m,
-        ),
-      );
+      // A user stop is not an error: keep whatever text was revealed so far.
+      if (!stoppedRef.current) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId ? { ...m, content: ERROR_MESSAGE } : m,
+          ),
+        );
+      }
     } finally {
       cancelAnimationFrame(rafId);
+      abortRef.current = null;
       setThinking(false);
       setIsStreaming(false);
     }
   };
 
-  // Reset to the welcome screen, clearing the conversation. Any in-flight
-  // stream keeps targeting its (now-absent) message id, so it harmlessly
-  // no-ops against the empty list.
+  // Stop an in-flight reply: freeze the typewriter at the revealed text and
+  // abort the network read. The tick/catch/finally machinery then winds the
+  // stream down and unlocks the input, so we mutate no state directly here.
+  const handleStop = () => {
+    stoppedRef.current = true;
+    abortRef.current?.abort();
+  };
+
+  // Reset to the welcome screen, clearing the conversation. Tear down any
+  // in-flight stream so it stops fetching instead of running to completion
+  // against the now-empty message list.
   const handleHome = () => {
+    stoppedRef.current = true;
+    abortRef.current?.abort();
     setMessages([]);
     setThinking(false);
     setIsStreaming(false);
@@ -280,6 +310,8 @@ export default function ChatApp() {
           placeholder="Write a message…"
           modelMenuDropUp
           disabled={isStreaming}
+          streaming={isStreaming}
+          onStop={handleStop}
           model={model}
           onModelChange={setModel}
         />
