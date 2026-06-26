@@ -44,7 +44,7 @@ CLAUDE.md
 AGENTS.md
 
 # local planning docs
-integration-plan.md
 to-do.md
-DEPLOY.md
-FIREWALL.md
+DEPLOYMENT.md
+HANDOFF.md
+commands.md
