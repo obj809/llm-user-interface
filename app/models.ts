@@ -56,21 +56,21 @@ export const MODELS: readonly ModelInfo[] = [
   //   label: "DeepSeek-R1 (local)",
   //   provider: "litellm",
   // },
-  // Served via the LiteLLM gateway; the picker's default surfaced model.
+  // Registered in the gateway but parked behind `disabled` until we surface it;
+  // flip `disabled` to re-enable.
   {
     id: "gpt-5.4-mini",
     label: "GPT-5.4 mini",
     provider: "litellm",
     upstreamModel: "gpt-5.4-mini",
+    disabled: true,
   },
-  // Registered in the gateway but parked behind `disabled` until we surface it;
-  // flip `disabled` to re-enable.
+  // Served via the LiteLLM gateway; the picker's default surfaced model.
   {
     id: "claude-haiku-4-5",
     label: "Claude Haiku 4.5",
     provider: "litellm",
     upstreamModel: "claude-haiku-4-5",
-    disabled: true,
   },
   // Standalone RAG backend over the EPBC Act 1999. The label names the
   // document on purpose: it answers questions about that report only, not
@@ -87,7 +87,7 @@ export const AVAILABLE_MODELS: readonly ModelInfo[] = MODELS.filter(
   (m) => !m.disabled,
 );
 
-export const DEFAULT_MODEL_ID: ModelId = "gpt-5.4-mini";
+export const DEFAULT_MODEL_ID: ModelId = "claude-haiku-4-5";
 
 export function getModel(id: string): ModelInfo | undefined {
   return MODELS.find((m) => m.id === id);
