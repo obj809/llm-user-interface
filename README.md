@@ -15,8 +15,8 @@ A Next.js and React chat UI for talking to large language models, featuring a ce
 
 ## Features
 
-- Model switcher — switch between providers per message
-- Streaming responses with a typewriter reveal
+- Model switcher — switch models per message across a LiteLLM gateway (Gemini, GPT, Anthropic, local Ollama) plus a document-grounded RAG backend
+- Streaming responses with a typewriter reveal, and a stop button to halt a reply mid-stream
 - Markdown rendering with theme-aware syntax highlighting
 - Light / dark mode, copy buttons, and reset to home
 
@@ -27,21 +27,29 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 ·
 
 ## Getting started
 
-Requires Node.js 20+ and an API key for at least one supported provider.
+Requires Node.js 20+ and at least one backend: a [LiteLLM](https://docs.litellm.ai/)
+gateway (one OpenAI-compatible endpoint fronting Gemini, GPT, Anthropic, and
+local Ollama) and/or the standalone RAG backend.
 
 ```bash
 npm install
 ```
 
-Add the key(s) for the provider(s) you want to use to `.env.local`:
+Add the backend(s) you want to use to `.env.local`:
 
 ```bash
-GEMINI_API_KEY=your-key
-OPENAI_API_KEY=your-key
+# LiteLLM gateway — serves every model except the RAG one
+LITELLM_BASE_URL=http://localhost:4000/v1
+LITELLM_API_KEY=your-litellm-key
+
+# RAG backend (optional) — RAG_API_KEY only needed if the backend gates on it
+RAG_SERVER_URL=http://localhost:8000
+# RAG_API_KEY=your-rag-key
 ```
 
-You only need the key for whichever model you select. Then start the dev server
-and open [http://localhost:3000](http://localhost:3000):
+Provider API keys (Gemini, OpenAI, Anthropic) live in the gateway, not here —
+you only need the backend for whichever model you select. Then start the dev
+server and open [http://localhost:3000](http://localhost:3000):
 
 ```bash
 npm run dev
@@ -71,7 +79,9 @@ app/
 ├── page.tsx              Renders <ChatApp />
 ├── globals.css           Tailwind + light/dark theme variables
 ├── models.ts             Shared model registry (single source of truth)
+├── clipboard.ts          Copy-to-clipboard helper (execCommand fallback)
 ├── api/chat/route.ts     Streaming POST handler; dispatches by provider
+├── lib/                  Helpers (messages.ts — group messages into turns)
 └── components/           ChatApp, ChatBox, ChatMessage, Markdown, …
 
 tests/                    Vitest suites, mirroring the app/ layout
