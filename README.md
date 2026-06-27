@@ -27,9 +27,10 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 ·
 
 ## Getting started
 
-Requires Node.js 20+ and at least one backend: a [LiteLLM](https://docs.litellm.ai/)
-gateway (one OpenAI-compatible endpoint fronting Gemini, GPT, Anthropic, and
-local Ollama) and/or the standalone RAG backend.
+Requires Node.js 20+ and at least one backend: the **api-gateway** — an Express
+service (the separate `llm-api-gateway` repo) that fronts a
+[LiteLLM](https://docs.litellm.ai/) gateway serving Gemini, GPT, Anthropic, and
+local Ollama — and/or the standalone RAG backend.
 
 ```bash
 npm install
@@ -38,18 +39,20 @@ npm install
 Add the backend(s) you want to use to `.env.local`:
 
 ```bash
-# LiteLLM gateway — serves every model except the RAG one
-LITELLM_BASE_URL=http://localhost:4000/v1
-LITELLM_API_KEY=your-litellm-key
+# api-gateway — serves every model except the RAG one. GATEWAY_API_KEY is only
+# needed if the gateway is configured with a shared secret.
+GATEWAY_URL=http://localhost:8787
+# GATEWAY_API_KEY=your-shared-secret
 
 # RAG backend (optional) — RAG_API_KEY only needed if the backend gates on it
 RAG_SERVER_URL=http://localhost:8000
 # RAG_API_KEY=your-rag-key
 ```
 
-Provider API keys (Gemini, OpenAI, Anthropic) live in the gateway, not here —
-you only need the backend for whichever model you select. Then start the dev
-server and open [http://localhost:3000](http://localhost:3000):
+Provider API keys (Gemini, OpenAI, Anthropic) and the LiteLLM key live in the
+gateway services, not here — you only need the backend for whichever model you
+select. Then start the dev server and open
+[http://localhost:3000](http://localhost:3000):
 
 ```bash
 npm run dev
@@ -62,8 +65,9 @@ Other scripts: `npm run build`, `npm run start`, `npm run lint`.
 Unit and component tests run on [Vitest](https://vitest.dev/) with
 [React Testing Library](https://testing-library.com/) (jsdom). Tests live under
 `tests/`, mirroring the source layout, and cover the model registry, the
-message-grouping and grammar-loading helpers, the streaming API route (provider
-SDKs mocked), and the UI components (input, model selector, theme toggle,
+message-grouping and grammar-loading helpers, the streaming API route (the
+gateway and RAG `fetch`es mocked), and the UI components (input, model selector,
+theme toggle,
 messages, Markdown/code rendering, clipboard).
 
 ```bash
