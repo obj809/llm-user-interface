@@ -48,3 +48,6 @@ TODO.md
 DEPLOYMENT.md
 HANDOFF.md
 commands.md
+
+# separate git repo, published on its own (github.com/obj809/llm-api-gateway)
+llm-api-gateway/

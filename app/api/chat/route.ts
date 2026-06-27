@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 // Direct-Gemini path (commented out): handy for local development without the
 // VPS LiteLLM gateway. To re-enable, uncomment this import and `streamGemini`
 // below, set a model's `provider` to "google" in app/models.ts, dispatch it to
@@ -62,42 +61,18 @@ export async function POST(request: Request) {
     return streamRag(base, messages);
   }
 
-  // Every other model is served through the LiteLLM gateway on the VPS, which
-  // is OpenAI-compatible — so a single client covers GPT, Gemini, and Ollama.
-  const baseURL = process.env.LITELLM_BASE_URL;
-  const apiKey = process.env.LITELLM_API_KEY;
-  if (!baseURL || !apiKey) {
+  // Every other model is served through the LiteLLM service on the VPS, reached
+  // via the standalone gateway (llm-api-gateway). The gateway holds the LiteLLM
+  // key and talks to the litellm container directly over the VPS network, so
+  // this route just forwards the conversation and streams the reply back.
+  const gatewayUrl = process.env.GATEWAY_URL;
+  if (!gatewayUrl) {
     return Response.json(
-      { error: "LITELLM_BASE_URL and LITELLM_API_KEY must be set on the server." },
+      { error: "GATEWAY_URL must be set on the server." },
       { status: 500 },
     );
   }
-
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      try {
-        await streamLiteLLM(
-          baseURL,
-          apiKey,
-          model.upstreamModel ?? model.id,
-          messages,
-          controller,
-          encoder,
-        );
-        controller.close();
-      } catch (error) {
-        controller.error(error);
-      }
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-store",
-    },
-  });
+  return streamGateway(gatewayUrl, model.upstreamModel ?? model.id, messages);
 }
 
 // Proxy to the external RAG backend. Unlike the gateway path below, this is a
@@ -145,26 +120,52 @@ async function streamRag(
   });
 }
 
-// LiteLLM speaks the OpenAI API, so the same SDK drives the gateway by pointing
-// `baseURL` at it. Roles (`user`/`assistant`) pass through unchanged.
-async function streamLiteLLM(
-  baseURL: string,
-  apiKey: string,
+// Forward to the llm-api-gateway. Like the RAG path, this is a pass-through: the
+// gateway streams `text/plain` content deltas, piped to the client verbatim. The
+// gateway opens the LiteLLM completion before committing its 200, so a pre-stream
+// failure (bad key → 401, litellm unreachable → 502) arrives here as a real
+// non-200 and is surfaced with that status instead of corrupting a 200 stream.
+async function streamGateway(
+  base: string,
   model: string,
   messages: ChatMessage[],
-  controller: ReadableStreamDefaultController<Uint8Array>,
-  encoder: TextEncoder,
-) {
-  const client = new OpenAI({ baseURL, apiKey });
-  const result = await client.chat.completions.create({
-    model,
-    messages,
-    stream: true,
-  });
-  for await (const chunk of result) {
-    const text = chunk.choices[0]?.delta?.content;
-    if (text) controller.enqueue(encoder.encode(text));
+): Promise<Response> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  // Shared-secret auth: only sent when configured, so a keyless local gateway
+  // keeps working without the env var.
+  if (process.env.GATEWAY_API_KEY) {
+    headers["X-Gateway-Key"] = process.env.GATEWAY_API_KEY;
   }
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(`${base}/chat`, {
+      method: "POST",
+      headers,
+      // The gateway expects the already-resolved upstream model name.
+      body: JSON.stringify({ messages, model }),
+    });
+  } catch {
+    return Response.json(
+      { error: "The LiteLLM gateway could not be reached." },
+      { status: 502 },
+    );
+  }
+
+  if (!upstream.ok || !upstream.body) {
+    return Response.json(
+      { error: `The LiteLLM gateway responded ${upstream.status}.` },
+      { status: upstream.status },
+    );
+  }
+  return new Response(upstream.body, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
 // Direct-Gemini path — preserved for local development without the LiteLLM

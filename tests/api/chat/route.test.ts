@@ -9,19 +9,6 @@ import {
   afterAll,
 } from "vitest";
 
-// Mock the OpenAI SDK (used for the LiteLLM gateway). Created via vi.hoisted so
-// the module-mock factory can close over it.
-const { openaiCreate } = vi.hoisted(() => ({
-  openaiCreate: vi.fn(),
-}));
-
-// Regular function (not an arrow) so it's usable as a constructor (`new`).
-vi.mock("openai", () => ({
-  default: vi.fn(function () {
-    return { chat: { completions: { create: openaiCreate } } };
-  }),
-}));
-
 import { POST } from "@/app/api/chat/route";
 import { DEFAULT_MODEL_ID, getModel } from "@/app/models";
 
@@ -29,15 +16,6 @@ import { DEFAULT_MODEL_ID, getModel } from "@/app/models";
 // derived from the registry so swapping the default doesn't break this test.
 const DEFAULT_UPSTREAM_MODEL =
   getModel(DEFAULT_MODEL_ID)!.upstreamModel ?? DEFAULT_MODEL_ID;
-
-async function* asyncChunks<T>(chunks: T[]) {
-  for (const chunk of chunks) yield chunk;
-}
-
-// Build an OpenAI-style streaming chunk for a content delta.
-function delta(content: string) {
-  return { choices: [{ delta: { content } }] };
-}
 
 function postJson(body: unknown) {
   return POST(
@@ -52,9 +30,8 @@ function postJson(body: unknown) {
 const ORIGINAL_ENV = { ...process.env };
 
 beforeEach(() => {
-  openaiCreate.mockReset();
-  process.env.LITELLM_BASE_URL = "http://litellm.test/v1";
-  process.env.LITELLM_API_KEY = "test-litellm-key";
+  process.env.GATEWAY_URL = "http://gateway.test";
+  delete process.env.GATEWAY_API_KEY;
 });
 
 afterAll(() => {
@@ -83,44 +60,84 @@ describe("validation", () => {
     expect((await res.json()).error).toMatch(/Unknown model/i);
   });
 
-  it("returns 500 when the LiteLLM gateway config is missing", async () => {
-    delete process.env.LITELLM_API_KEY;
+  it("returns 500 when GATEWAY_URL is unset", async () => {
+    delete process.env.GATEWAY_URL;
     const res = await postJson({ messages: [{ role: "user", content: "hi" }] });
     expect(res.status).toBe(500);
-    expect((await res.json()).error).toMatch(/LITELLM/);
+    expect((await res.json()).error).toMatch(/GATEWAY_URL/);
   });
 });
 
 describe("LiteLLM gateway (default model)", () => {
-  it("streams concatenated chunks as text/plain", async () => {
-    openaiCreate.mockResolvedValue(
-      asyncChunks([delta("Hello"), delta(", world")]),
-    );
+  const gatewayFetch = vi.fn();
+
+  beforeEach(() => {
+    gatewayFetch.mockReset();
+    vi.stubGlobal("fetch", gatewayFetch);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("pipes the gateway's stream through as text/plain", async () => {
+    gatewayFetch.mockResolvedValue(new Response("Hello, world"));
     const res = await postJson({ messages: [{ role: "user", content: "hi" }] });
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toMatch(/text\/plain/);
     expect(await res.text()).toBe("Hello, world");
   });
 
-  it("passes the model id and messages through to the gateway", async () => {
-    openaiCreate.mockResolvedValue(asyncChunks([delta("ok")]));
+  it("forwards messages and the resolved model name to the gateway", async () => {
+    gatewayFetch.mockResolvedValue(new Response("ok"));
     const messages = [
       { role: "user", content: "hi" },
       { role: "assistant", content: "yo" },
     ];
     await (await postJson({ messages })).text();
 
-    expect(openaiCreate).toHaveBeenCalledWith({
-      model: DEFAULT_UPSTREAM_MODEL,
-      messages,
-      stream: true,
+    expect(gatewayFetch).toHaveBeenCalledWith(
+      "http://gateway.test/chat",
+      expect.objectContaining({ method: "POST" }),
+    );
+    const sentBody = JSON.parse(gatewayFetch.mock.calls[0][1].body);
+    expect(sentBody).toEqual({ messages, model: DEFAULT_UPSTREAM_MODEL });
+  });
+
+  it("sends X-Gateway-Key when GATEWAY_API_KEY is set", async () => {
+    process.env.GATEWAY_API_KEY = "shared-secret";
+    gatewayFetch.mockResolvedValue(new Response("ok"));
+
+    await postJson({ messages: [{ role: "user", content: "hi" }] });
+
+    expect(gatewayFetch.mock.calls[0][1].headers).toEqual({
+      "Content-Type": "application/json",
+      "X-Gateway-Key": "shared-secret",
     });
   });
 
-  it("propagates a gateway error onto the stream", async () => {
-    openaiCreate.mockRejectedValue(new Error("boom"));
+  it("omits X-Gateway-Key when GATEWAY_API_KEY is unset", async () => {
+    gatewayFetch.mockResolvedValue(new Response("ok"));
+
+    await postJson({ messages: [{ role: "user", content: "hi" }] });
+
+    expect(gatewayFetch.mock.calls[0][1].headers).toEqual({
+      "Content-Type": "application/json",
+    });
+  });
+
+  it("returns 502 when the gateway is unreachable", async () => {
+    gatewayFetch.mockRejectedValue(new Error("boom"));
     const res = await postJson({ messages: [{ role: "user", content: "hi" }] });
-    await expect(res.text()).rejects.toThrow();
+    expect(res.status).toBe(502);
+    expect((await res.json()).error).toMatch(/gateway/i);
+  });
+
+  it("surfaces the gateway's status when it responds non-200", async () => {
+    gatewayFetch.mockResolvedValue(new Response("unauthorized", { status: 401 }));
+    const res = await postJson({ messages: [{ role: "user", content: "hi" }] });
+    expect(res.status).toBe(401);
+    expect((await res.json()).error).toMatch(/gateway/i);
   });
 });
 
@@ -228,6 +245,17 @@ describe("RAG provider", () => {
 });
 
 describe("disabled model", () => {
+  const gatewayFetch = vi.fn();
+
+  beforeEach(() => {
+    gatewayFetch.mockReset();
+    vi.stubGlobal("fetch", gatewayFetch);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("rejects the disabled gpt model with 400 and never calls the gateway", async () => {
     const res = await postJson({
       messages: [{ role: "user", content: "hi" }],
@@ -235,6 +263,6 @@ describe("disabled model", () => {
     });
     expect(res.status).toBe(400);
     expect((await res.json()).error).toMatch(/unavailable/i);
-    expect(openaiCreate).not.toHaveBeenCalled();
+    expect(gatewayFetch).not.toHaveBeenCalled();
   });
 });
