@@ -5,7 +5,7 @@ export type ModelId =
   | "gemini-2.5-flash"
   | "llama3.2"
   // | "deepseek-r1"   // hidden from UI; see the commented entry in MODELS below
-  | "gpt-5.4-mini"
+  // | "gpt-5.4-mini"   // hidden from UI; see the commented entry in MODELS below
   | "claude-haiku-4-5"
   | "rag-v1";
 
@@ -66,16 +66,16 @@ export const MODELS: readonly ModelInfo[] = [
   //   label: "DeepSeek-R1 (local)",
   //   provider: "litellm",
   // },
-  // Direct-to-OpenAI via the `openai` SDK (needs OPENAI_API_KEY). The `id` is the
-  // real OpenAI API model name, so `upstreamModel` is omitted. Disabled by
-  // default — flip `disabled` to surface it. Set `provider: "litellm"` to route
-  // through the VPS gateway instead.
-  {
-    id: "gpt-5.4-mini",
-    label: "GPT-5.4 mini",
-    provider: "openai",
-    disabled: true,
-  },
+  // Direct-to-OpenAI via the `openai` SDK (needs OPENAI_API_KEY). Uncomment this
+  // entry AND the "gpt-5.4-mini" `ModelId` union member above to surface it. The
+  // `id` is the real OpenAI API model name, so `upstreamModel` is omitted. Set
+  // `provider: "litellm"` to route through the VPS gateway instead.
+  // {
+  //   id: "gpt-5.4-mini",
+  //   label: "GPT-5.4 mini",
+  //   provider: "openai",
+  //   disabled: true,
+  // },
   // Direct-to-Anthropic alternative to the gateway-backed entry above (needs
   // ANTHROPIC_API_KEY). Uncomment this entry AND add "claude-haiku-4-5-direct"
   // to the `ModelId` union above to use it; `upstreamModel` carries the exact
