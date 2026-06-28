@@ -48,7 +48,7 @@ export const MODELS: readonly ModelInfo[] = [
   // is omitted (the route falls back to `id`). Note: on CPU it's slow.
   {
     id: "llama3.2",
-    label: "Llama 3.2 (ollama))",
+    label: "Llama 3.2 (Ollama)",
     provider: "litellm",
   },
   // DeepSeek-R1 is registered in the gateway but hidden from the UI: it's a
