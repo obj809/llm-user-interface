@@ -1,8 +1,10 @@
-// Direct-Gemini path (commented out): handy for local development without the
-// VPS LiteLLM gateway. To re-enable, uncomment this import and `streamGemini`
-// below, set a model's `provider` to "google" in app/models.ts, dispatch it to
-// `streamGemini`, and provide GEMINI_API_KEY.
-// import { GoogleGenAI } from "@google/genai";
+// Optional direct-to-provider paths for running without the VPS LiteLLM gateway.
+// A model opts in by setting its `provider` to "google" / "openai" / "anthropic"
+// in app/models.ts and providing the matching API key
+// (GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY).
+import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import { DEFAULT_MODEL_ID, getModel } from "@/app/models";
 
 export const runtime = "nodejs";
@@ -59,6 +61,41 @@ export async function POST(request: Request) {
       );
     }
     return streamRag(base, messages);
+  }
+
+  // Optional direct-to-provider paths: each calls the provider's API directly
+  // (no gateway). The model name sent upstream follows the same convention as
+  // the gateway path: `upstreamModel` if set, otherwise `id`.
+  const upstreamModel = model.upstreamModel ?? model.id;
+  if (model.provider === "google") {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return Response.json(
+        { error: "GEMINI_API_KEY is not set on the server." },
+        { status: 500 },
+      );
+    }
+    return streamGemini(apiKey, upstreamModel, messages);
+  }
+  if (model.provider === "openai") {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return Response.json(
+        { error: "OPENAI_API_KEY is not set on the server." },
+        { status: 500 },
+      );
+    }
+    return streamOpenAI(apiKey, upstreamModel, messages);
+  }
+  if (model.provider === "anthropic") {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return Response.json(
+        { error: "ANTHROPIC_API_KEY is not set on the server." },
+        { status: 500 },
+      );
+    }
+    return streamAnthropic(apiKey, upstreamModel, messages);
   }
 
   // Every other model is served through the LiteLLM service on the VPS, reached
@@ -168,28 +205,125 @@ async function streamGateway(
   });
 }
 
-// Direct-Gemini path — preserved for local development without the LiteLLM
-// gateway. To use: uncomment the `@google/genai` import above and this
-// function, set the model's `provider` to "google" in app/models.ts, dispatch
-// it here (e.g. `if (model.provider === "google") await streamGemini(...)`),
-// and set GEMINI_API_KEY.
-//
-// async function streamGemini(
-//   apiKey: string,
-//   model: string,
-//   messages: ChatMessage[],
-//   controller: ReadableStreamDefaultController<Uint8Array>,
-//   encoder: TextEncoder,
-// ) {
-//   const ai = new GoogleGenAI({ apiKey });
-//   // Map the UI's messages to Gemini's `contents` format.
-//   const contents = messages.map((message) => ({
-//     role: message.role === "assistant" ? "model" : "user",
-//     parts: [{ text: message.content }],
-//   }));
-//
-//   const result = await ai.models.generateContentStream({ model, contents });
-//   for await (const chunk of result) {
-//     if (chunk.text) controller.enqueue(encoder.encode(chunk.text));
-//   }
-// }
+// Wrap an async iterable of text deltas in the same `text/plain` streaming
+// Response the gateway/RAG paths return, so the client contract is identical
+// (plaintext chunks → typewriter). Errors raised mid-stream propagate to the
+// client as a broken stream; pre-stream failures are handled by each caller
+// before this is reached, so they can still surface as a real non-200.
+function textStreamResponse(chunks: AsyncIterable<string>): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        for await (const text of chunks) {
+          if (text) controller.enqueue(encoder.encode(text));
+        }
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+// Direct-to-Google via @google/genai. The stream is opened before returning so a
+// pre-stream failure (bad key, etc.) becomes a real non-200 rather than a
+// corrupted 200 stream — mirroring the gateway/RAG behaviour.
+async function streamGemini(
+  apiKey: string,
+  model: string,
+  messages: ChatMessage[],
+): Promise<Response> {
+  const ai = new GoogleGenAI({ apiKey });
+  // Map the UI's messages to Gemini's `contents` format.
+  const contents = messages.map((message) => ({
+    role: message.role === "assistant" ? "model" : "user",
+    parts: [{ text: message.content }],
+  }));
+
+  try {
+    const result = await ai.models.generateContentStream({ model, contents });
+    async function* deltas() {
+      for await (const chunk of result) {
+        if (chunk.text) yield chunk.text;
+      }
+    }
+    return textStreamResponse(deltas());
+  } catch {
+    return Response.json(
+      { error: "The Gemini API request failed." },
+      { status: 502 },
+    );
+  }
+}
+
+// Direct-to-OpenAI via the `openai` SDK. As above, the stream is opened before
+// returning so auth/connection failures surface as a real non-200.
+async function streamOpenAI(
+  apiKey: string,
+  model: string,
+  messages: ChatMessage[],
+): Promise<Response> {
+  const client = new OpenAI({ apiKey });
+
+  try {
+    const stream = await client.chat.completions.create({
+      model,
+      messages,
+      stream: true,
+    });
+    async function* deltas() {
+      for await (const part of stream) {
+        const text = part.choices[0]?.delta?.content;
+        if (text) yield text;
+      }
+    }
+    return textStreamResponse(deltas());
+  } catch {
+    return Response.json(
+      { error: "The OpenAI API request failed." },
+      { status: 502 },
+    );
+  }
+}
+
+// Direct-to-Anthropic via the `@anthropic-ai/sdk`. As above, the stream is opened
+// before returning so auth/connection failures surface as a real non-200.
+async function streamAnthropic(
+  apiKey: string,
+  model: string,
+  messages: ChatMessage[],
+): Promise<Response> {
+  const client = new Anthropic({ apiKey });
+
+  try {
+    const stream = client.messages.stream({
+      model,
+      // Anthropic requires an explicit cap; generous enough for chat replies.
+      max_tokens: 4096,
+      messages,
+    });
+    async function* deltas() {
+      for await (const event of stream) {
+        if (
+          event.type === "content_block_delta" &&
+          event.delta.type === "text_delta"
+        ) {
+          yield event.delta.text;
+        }
+      }
+    }
+    return textStreamResponse(deltas());
+  } catch {
+    return Response.json(
+      { error: "The Anthropic API request failed." },
+      { status: 502 },
+    );
+  }
+}

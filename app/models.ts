@@ -9,19 +9,22 @@ export type ModelId =
   | "claude-haiku-4-5"
   | "rag-v1";
 
-// "google" is retained for the optional direct-Gemini path in the API route
-// (commented out there; handy for local dev without the VPS gateway).
-export type ModelProvider = "litellm" | "rag" | "google";
+// `litellm` routes through the VPS gateway. `google` / `openai` / `anthropic` are
+// optional direct-to-provider paths in the API route (using GEMINI_API_KEY /
+// OPENAI_API_KEY / ANTHROPIC_API_KEY) so the app can run without the gateway.
+export type ModelProvider = "litellm" | "rag" | "google" | "openai" | "anthropic";
 
 export type ModelInfo = {
   id: ModelId;
   label: string;
   // `litellm` models are served through the OpenAI-compatible LiteLLM gateway
   // on the VPS (GPT, Gemini, Ollama all behind one endpoint); `rag` proxies
-  // the standalone RAG backend.
+  // the standalone RAG backend; `google` / `openai` / `anthropic` call the
+  // provider's API directly.
   provider: ModelProvider;
   // The model name sent upstream. For LiteLLM it must match a `model_name`
-  // registered in the gateway config; defaults to `id` when omitted.
+  // registered in the gateway config; for a direct provider it must be that
+  // provider's API model name. Defaults to `id` when omitted.
   upstreamModel?: string;
   // Temporarily hide a model from the picker and reject it at the API.
   // Flip back to `false`/remove to re-enable.
@@ -29,15 +32,15 @@ export type ModelInfo = {
 };
 
 export const MODELS: readonly ModelInfo[] = [
-  // Registered in the gateway but parked behind `disabled`; flip to re-enable.
-  // The UI id stays friendly while `upstreamModel` matches the `model_name`
-  // registered in the gateway config. For local dev you can switch this to
-  // `provider: "google"` and re-enable the direct path in the API route.
+  // Direct-to-Google via @google/genai (needs GEMINI_API_KEY). The `id` is the
+  // real Gemini API model name, so `upstreamModel` is omitted. Disabled by
+  // default — flip `disabled` to surface it. To route through the VPS gateway
+  // instead, set `provider: "litellm"` and `upstreamModel` to the gateway
+  // `model_name` (e.g. "gemini-flash").
   {
     id: "gemini-2.5-flash",
     label: "Gemini 2.5 Flash",
-    provider: "litellm",
-    upstreamModel: "gemini-flash",
+    provider: "google",
     disabled: true,
   },
   // Local model served through the Ollama container behind the LiteLLM
@@ -56,13 +59,14 @@ export const MODELS: readonly ModelInfo[] = [
   //   label: "DeepSeek-R1 (local)",
   //   provider: "litellm",
   // },
-  // Registered in the gateway but parked behind `disabled` until we surface it;
-  // flip `disabled` to re-enable.
+  // Direct-to-OpenAI via the `openai` SDK (needs OPENAI_API_KEY). The `id` is the
+  // real OpenAI API model name, so `upstreamModel` is omitted. Disabled by
+  // default — flip `disabled` to surface it. Set `provider: "litellm"` to route
+  // through the VPS gateway instead.
   {
     id: "gpt-5.4-mini",
     label: "GPT-5.4 mini",
-    provider: "litellm",
-    upstreamModel: "gpt-5.4-mini",
+    provider: "openai",
     disabled: true,
   },
   // Served via the LiteLLM gateway; the picker's default surfaced model.
@@ -72,6 +76,18 @@ export const MODELS: readonly ModelInfo[] = [
     provider: "litellm",
     upstreamModel: "claude-haiku-4-5",
   },
+  // Direct-to-Anthropic alternative to the gateway-backed entry above (needs
+  // ANTHROPIC_API_KEY). Uncomment this entry AND add "claude-haiku-4-5-direct"
+  // to the `ModelId` union above to use it; `upstreamModel` carries the exact
+  // API model id. The `id` differs so it can coexist with the litellm
+  // `claude-haiku-4-5` entry without a duplicate key.
+  // {
+  //   id: "claude-haiku-4-5-direct",
+  //   label: "Claude Haiku 4.5 (direct)",
+  //   provider: "anthropic",
+  //   upstreamModel: "claude-haiku-4-5",
+  //   disabled: true,
+  // },
   // Standalone RAG backend over the EPBC Act 1999. The label names the
   // document on purpose: it answers questions about that report only, not
   // general chat.
