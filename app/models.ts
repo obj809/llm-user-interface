@@ -32,6 +32,13 @@ export type ModelInfo = {
 };
 
 export const MODELS: readonly ModelInfo[] = [
+  // Served via the LiteLLM gateway; the picker's default surfaced model.
+  {
+    id: "claude-haiku-4-5",
+    label: "Claude Haiku 4.5",
+    provider: "litellm",
+    upstreamModel: "claude-haiku-4-5",
+  },
   // Direct-to-Google via @google/genai (needs GEMINI_API_KEY). The `id` is the
   // real Gemini API model name, so `upstreamModel` is omitted. Disabled by
   // default — flip `disabled` to surface it. To route through the VPS gateway
@@ -68,13 +75,6 @@ export const MODELS: readonly ModelInfo[] = [
     label: "GPT-5.4 mini",
     provider: "openai",
     disabled: true,
-  },
-  // Served via the LiteLLM gateway; the picker's default surfaced model.
-  {
-    id: "claude-haiku-4-5",
-    label: "Claude Haiku 4.5",
-    provider: "litellm",
-    upstreamModel: "claude-haiku-4-5",
   },
   // Direct-to-Anthropic alternative to the gateway-backed entry above (needs
   // ANTHROPIC_API_KEY). Uncomment this entry AND add "claude-haiku-4-5-direct"
