@@ -256,10 +256,10 @@ describe("disabled model", () => {
     vi.unstubAllGlobals();
   });
 
-  it("rejects the disabled gpt model with 400 and never calls the gateway", async () => {
+  it("rejects a disabled model with 400 and never calls the gateway", async () => {
     const res = await postJson({
       messages: [{ role: "user", content: "hi" }],
-      model: "gpt-5.4-mini",
+      model: "gemini-2.5-flash",
     });
     expect(res.status).toBe(400);
     expect((await res.json()).error).toMatch(/unavailable/i);

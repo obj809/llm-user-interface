@@ -3,8 +3,8 @@ import { MODELS, DEFAULT_MODEL_ID, getModel } from "@/app/models";
 
 describe("getModel", () => {
   it("returns the matching model for a known id", () => {
-    expect(getModel("gemini-2.5-flash")?.provider).toBe("litellm");
-    expect(getModel("gpt-5.4-mini")?.provider).toBe("litellm");
+    expect(getModel("gemini-2.5-flash")?.provider).toBe("google");
+    expect(getModel("llama3.2")?.provider).toBe("litellm");
     expect(getModel("rag-v1")?.provider).toBe("rag");
   });
 

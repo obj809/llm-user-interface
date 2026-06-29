@@ -19,14 +19,14 @@ describe("ModelSelector", () => {
     await user.click(screen.getByRole("button", { name: /Claude Haiku 4\.5/ }));
 
     expect(screen.getByRole("listbox")).toBeInTheDocument();
-    // Claude Haiku 4.5, Llama 3.2 (local), and the RAG model are enabled; Gemini
-    // 2.5 Flash and GPT-5.4 mini are disabled, and DeepSeek-R1 is commented out.
+    // Claude Haiku 4.5, Llama 3.2 (Ollama), and the RAG model are enabled; Gemini
+    // 2.5 Flash is disabled, and GPT-5.4 mini / DeepSeek-R1 are commented out.
     expect(screen.getAllByRole("option")).toHaveLength(3);
     expect(
       screen.getByRole("option", { name: /Claude Haiku 4\.5/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("option", { name: /Llama 3\.2 \(local\)/ }),
+      screen.getByRole("option", { name: /Llama 3\.2 \(Ollama\)/ }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("option", { name: /EPBC Act 1999 \(RAG\)/ }),
