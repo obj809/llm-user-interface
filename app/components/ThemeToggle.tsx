@@ -1,9 +1,30 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
+
+type Theme = "light" | "dark";
+
+// The theme lives outside React, in the `.dark` class on <html> that the
+// no-flash script in layout sets before paint. useSyncExternalStore reads it
+// without a setState-in-effect (which the client's first render would otherwise
+// need to sync), and re-renders subscribers when `toggle` flips the class.
+const listeners = new Set<() => void>();
+
+function subscribe(onChange: () => void) {
+  listeners.add(onChange);
+  return () => listeners.delete(onChange);
+}
+
+function getSnapshot(): Theme {
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
+}
+
 export default function ThemeToggle() {
-  // Read/write the theme straight from the DOM class the no-flash script set in
-  // layout — no React state, so there's no chance of a hydration mismatch and
-  // the correct icon shows on first paint (icon visibility is CSS-driven below).
+  // `getServerSnapshot` returns a constant because the server can't know the
+  // theme; useSyncExternalStore re-syncs on the client without a hydration
+  // warning, and the icons are CSS-driven so nothing flashes visually.
+  const theme = useSyncExternalStore(subscribe, getSnapshot, () => "dark");
+
   const toggle = () => {
     const isDark = document.documentElement.classList.toggle("dark");
     try {
@@ -12,13 +33,14 @@ export default function ThemeToggle() {
       // Storage can be unavailable (private mode, blocked cookies); the toggle
       // still works for this session, it just won't persist.
     }
+    listeners.forEach((l) => l());
   };
 
   return (
     <button
       type="button"
       onClick={toggle}
-      aria-label="Toggle dark mode"
+      aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
       className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800"
     >
       {/* Icon visibility is driven by the `.dark` class (set pre-paint by the
