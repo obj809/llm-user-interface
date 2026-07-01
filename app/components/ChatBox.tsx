@@ -10,8 +10,6 @@ type ChatBoxProps = {
   placeholder?: string;
   modelMenuDropUp?: boolean;
   disabled?: boolean;
-  // While a reply streams, the send button becomes a stop button that calls
-  // `onStop` instead of submitting.
   streaming?: boolean;
   onStop?: () => void;
   model?: ModelId;
