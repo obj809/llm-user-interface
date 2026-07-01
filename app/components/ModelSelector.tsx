@@ -23,7 +23,6 @@ export default function ModelSelector({
   const [internal, setInternal] = useState<ModelId>(DEFAULT_MODEL_ID);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Support both controlled and uncontrolled usage.
   const selected = value ?? internal;
   const selectedLabel =
     MODELS.find((m) => m.id === selected)?.label ?? selected;

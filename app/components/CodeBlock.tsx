@@ -107,8 +107,6 @@ export default function CodeBlock({
   language?: string;
 }) {
   const [copied, setCopied] = useState(false);
-  // Fenced code blocks carry a trailing newline; drop it so the last line
-  // doesn't render an empty row.
   const source = code.replace(/\n$/, "");
 
   // Resolve the fence tag to a canonical grammar name and load it on demand.

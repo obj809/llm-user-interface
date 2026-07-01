@@ -3,8 +3,6 @@ type ThinkingDotProps = {
   className?: string;
 };
 
-// A flashing dot used as the "thinking" indicator while a reply is pending.
-// Theme-aware: dark dot in light mode, white dot in dark mode.
 export default function ThinkingDot({
   size = 17,
   className = "",

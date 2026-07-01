@@ -1,39 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-type Theme = "light" | "dark";
-
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("dark");
-
-  // Sync state with the class set by the no-flash script in layout.
-  useEffect(() => {
-    setTheme(document.documentElement.classList.contains("dark") ? "dark" : "light");
-  }, []);
-
+  // Read/write the theme straight from the DOM class the no-flash script set in
+  // layout — no React state, so there's no chance of a hydration mismatch and
+  // the correct icon shows on first paint (icon visibility is CSS-driven below).
   const toggle = () => {
-    const next: Theme = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    document.documentElement.classList.toggle("dark", next === "dark");
-    localStorage.setItem("theme", next);
+    const isDark = document.documentElement.classList.toggle("dark");
+    try {
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+    } catch {
+      // Storage can be unavailable (private mode, blocked cookies); the toggle
+      // still works for this session, it just won't persist.
+    }
   };
 
   return (
     <button
       type="button"
       onClick={toggle}
-      aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+      aria-label="Toggle dark mode"
       className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800"
     >
-      {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+      {/* Icon visibility is driven by the `.dark` class (set pre-paint by the
+          no-flash script), so the correct icon shows on first paint without a
+          flash or a hydration mismatch. */}
+      <SunIcon className="hidden dark:block" />
+      <MoonIcon className="block dark:hidden" />
     </button>
   );
 }
 
-function SunIcon() {
+function SunIcon({ className }: { className?: string }) {
   return (
     <svg
+      className={className}
       width="20"
       height="20"
       viewBox="0 0 24 24"
@@ -49,9 +49,10 @@ function SunIcon() {
   );
 }
 
-function MoonIcon() {
+function MoonIcon({ className }: { className?: string }) {
   return (
     <svg
+      className={className}
       width="20"
       height="20"
       viewBox="0 0 24 24"

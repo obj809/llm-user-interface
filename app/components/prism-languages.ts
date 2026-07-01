@@ -111,7 +111,6 @@ export function ensureLanguage(language: string): Promise<void> {
     try {
       await import(`prismjs/components/prism-${language}`);
     } catch {
-      // Unknown/unsupported language — leave it to render as plain text.
     }
   })();
 

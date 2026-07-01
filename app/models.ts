@@ -4,8 +4,8 @@
 export type ModelId =
   | "gemini-2.5-flash"
   | "llama3.2"
-  // | "deepseek-r1"   // hidden from UI; see the commented entry in MODELS below
-  // | "gpt-5.4-mini"   // hidden from UI; see the commented entry in MODELS below
+  // | "deepseek-r1"
+  // | "gpt-5.4-mini"
   | "claude-haiku-4-5"
   | "rag-v1";
 

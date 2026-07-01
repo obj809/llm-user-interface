@@ -2,7 +2,6 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import CodeBlock from "./CodeBlock";
 
-// Tailwind-styled renderers for the model's markdown output.
 const components: Components = {
   p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
   strong: ({ children }) => (
@@ -35,8 +34,7 @@ const components: Components = {
       {children}
     </a>
   ),
-  // Fenced/multiline code renders as a CodeBlock card; inline code stays a
-  // simple styled span. `pre` just passes through — CodeBlock is its own card.
+  
   code: ({ className, children }) => {
     const match = /language-(\w+)/.exec(className ?? "");
     const text = String(children ?? "");

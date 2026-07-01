@@ -4,7 +4,6 @@ type HomeButtonProps = {
   onClick: () => void;
 };
 
-// Discrete reset button: returns the app to the welcome screen.
 export default function HomeButton({ onClick }: HomeButtonProps) {
   return (
     <button

@@ -1,7 +1,5 @@
 type SendButtonProps = {
   onClick?: () => void;
-  // While a reply streams, the button becomes a stop control: a square glyph
-  // in neutral zinc (green reads as "go"), aborting the response on click.
   streaming?: boolean;
 };
 
