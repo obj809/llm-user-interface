@@ -16,6 +16,7 @@ A Next.js and React chat UI for talking to large language models, featuring a ce
 ## Features
 
 - Model switcher — switch models per message across a LiteLLM gateway (Gemini, GPT, Anthropic, local Ollama) plus a document-grounded RAG backend
+- Optional direct-to-provider mode — a model can call the Gemini, OpenAI, or Anthropic API straight from the route with just an API key, so the app can run gateway-free (these entries ship disabled; opt in per model)
 - Streaming responses with a typewriter reveal, and a stop button to halt a reply mid-stream
 - Markdown rendering with theme-aware syntax highlighting
 - Light / dark mode, copy buttons, and reset to home
@@ -30,7 +31,10 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 ·
 Requires Node.js 20+ and at least one backend: the **api-gateway** — an Express
 service (the separate `llm-api-gateway` repo) that fronts a
 [LiteLLM](https://docs.litellm.ai/) gateway serving Gemini, GPT, Anthropic, and
-local Ollama — and/or the standalone RAG backend.
+local Ollama — and/or the standalone RAG backend. Alternatively, a model can be
+set to a **direct-to-provider** path (`provider: "google"/"openai"/"anthropic"`
+in `app/models.ts`) that calls the provider's API straight from the route with
+just an API key — no gateway required for that model.
 
 ```bash
 npm install
@@ -47,11 +51,20 @@ GATEWAY_URL=http://localhost:8787
 # RAG backend (optional) — RAG_API_KEY only needed if the backend gates on it
 RAG_SERVER_URL=http://localhost:8000
 # RAG_API_KEY=your-rag-key
+
+# Direct-to-provider (optional) — only for models switched to a direct provider
+# in app/models.ts (these ship disabled). Set the key for whichever you enable;
+# those models then need no gateway.
+# GEMINI_API_KEY=your-gemini-key
+# OPENAI_API_KEY=your-openai-key
+# ANTHROPIC_API_KEY=your-anthropic-key
 ```
 
-Provider API keys (Gemini, OpenAI, Anthropic) and the LiteLLM key live in the
+For gateway models, the provider API keys and the LiteLLM key live in the
 gateway services, not here — you only need the backend for whichever model you
-select. Then start the dev server and open
+select. The optional direct-to-provider models are the exception: they read
+their provider key (`GEMINI_API_KEY` / `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`)
+from this app's `.env.local`. Then start the dev server and open
 [http://localhost:3000](http://localhost:3000):
 
 ```bash
