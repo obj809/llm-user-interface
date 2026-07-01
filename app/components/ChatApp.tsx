@@ -20,13 +20,8 @@ export default function ChatApp() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastTurnRef = useRef<HTMLDivElement>(null);
   const idCounter = useRef(0);
-  // In-flight stream controls: `abortRef` cancels the network read; `stoppedRef`
-  // signals a user-initiated stop so the typewriter freezes at the revealed
-  // text and the catch skips the error message.
   const abortRef = useRef<AbortController | null>(null);
   const stoppedRef = useRef(false);
-  // Whether to keep the streaming reply pinned to the bottom of the viewport.
-  // True until the user scrolls up to read; resumes when they return.
   const followRef = useRef(true);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [lastTurnHeight, setLastTurnHeight] = useState(0);
@@ -81,12 +76,12 @@ export default function ChatApp() {
     };
     const onTouchMove = (e: TouchEvent) => {
       const y = e.touches[0].clientY;
-      pauseIfUp(lastY - y); // finger dragging down scrolls content upward
+      pauseIfUp(lastY - y);
       lastY = y;
     };
     const onScroll = () => {
       const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
-      if (distance < 24) followRef.current = true; // back at the bottom
+      if (distance < 24) followRef.current = true;
     };
     el.addEventListener("wheel", onWheel, { passive: true });
     el.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -129,7 +124,7 @@ export default function ChatApp() {
       ...history,
       { id: assistantId, role: "assistant", content: "", model },
     ]);
-    followRef.current = true; // follow the new reply until the user scrolls up
+    followRef.current = true;
     setThinking(true);
     setIsStreaming(true);
 
@@ -199,11 +194,10 @@ export default function ChatApp() {
         target += decoder.decode(value, { stream: true });
       }
       streamDone = true;
-      await typing; // let the typewriter finish revealing the buffer
+      await typing;
     } catch {
       streamDone = true;
       cancelAnimationFrame(rafId);
-      // A user stop is not an error: keep whatever text was revealed so far.
       if (!stoppedRef.current) {
         setMessages((prev) =>
           prev.map((m) =>
@@ -238,7 +232,7 @@ export default function ChatApp() {
     setIsStreaming(false);
   };
 
-  // Fixed top-right toolbar: theme toggle, with the home button to its right.
+  // Top-right toolbar: theme toggle, with the home button to its right.
   const toolbar = (
     <div className="fixed right-3 top-3 z-10 flex items-center gap-1 sm:right-6 sm:top-4">
       <ThemeToggle />
@@ -273,7 +267,7 @@ export default function ChatApp() {
   // turn (minus the top gap + bottom padding the scroll area already has), so
   // scrolling stops right at the content instead of into empty space. The
   // first turn needs none — there's nothing above it to scroll away.
-  const SCROLL_GUTTERS = 64; // scroll-mt-8 (top) + py-8 bottom padding
+  const SCROLL_GUTTERS = 64;
   const tailSpace =
     turns.length > 1
       ? Math.max(0, viewportHeight - lastTurnHeight - SCROLL_GUTTERS)
