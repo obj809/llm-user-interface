@@ -98,10 +98,7 @@ export async function POST(request: Request) {
     return streamAnthropic(apiKey, upstreamModel, messages);
   }
 
-  // Every other model is served through the LiteLLM service on the VPS, reached
-  // via the standalone gateway (llm-api-gateway). The gateway holds the LiteLLM
-  // key and talks to the litellm container directly over the VPS network, so
-  // this route just forwards the conversation and streams the reply back.
+
   const gatewayUrl = process.env.GATEWAY_URL;
   if (!gatewayUrl) {
     return Response.json(
@@ -139,8 +136,6 @@ async function streamRag(
   const upstream = await fetch(`${base}/chat`, {
     method: "POST",
     headers,
-    // Full history, verbatim — the backend uses the last user message as the
-    // query today but accepts the whole conversation.
     body: JSON.stringify({ messages }),
   });
   if (!upstream.ok || !upstream.body) {
@@ -170,8 +165,6 @@ async function streamGateway(
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  // Shared-secret auth: only sent when configured, so a keyless local gateway
-  // keeps working without the env var.
   if (process.env.GATEWAY_API_KEY) {
     headers["X-Gateway-Key"] = process.env.GATEWAY_API_KEY;
   }
@@ -181,7 +174,6 @@ async function streamGateway(
     upstream = await fetch(`${base}/chat`, {
       method: "POST",
       headers,
-      // The gateway expects the already-resolved upstream model name.
       body: JSON.stringify({ messages, model }),
     });
   } catch {
@@ -241,7 +233,6 @@ async function streamGemini(
   messages: ChatMessage[],
 ): Promise<Response> {
   const ai = new GoogleGenAI({ apiKey });
-  // Map the UI's messages to Gemini's `contents` format.
   const contents = messages.map((message) => ({
     role: message.role === "assistant" ? "model" : "user",
     parts: [{ text: message.content }],
@@ -305,7 +296,6 @@ async function streamAnthropic(
   try {
     const stream = client.messages.stream({
       model,
-      // Anthropic requires an explicit cap; generous enough for chat replies.
       max_tokens: 4096,
       messages,
     });
