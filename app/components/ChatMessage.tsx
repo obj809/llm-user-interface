@@ -9,8 +9,6 @@ export type Message = {
   id: number;
   role: "user" | "assistant";
   content: string;
-  // Which model produced this reply. Set on assistant messages; the UI labels
-  // the response with it so mixed-model conversations stay attributable.
   model?: ModelId;
 };
 
